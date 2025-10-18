@@ -10,31 +10,42 @@
     .container { display: flex; flex-wrap: wrap; width: 100%; height: 100%; }
     .video-wrapper { position: relative; }
     .hls-video {
-      object-fit: cover; border: none;
-      cursor: pointer; width: 100%; height: 100%; display: block;
+      object-fit: cover;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    .overlay-container {
+      position: absolute;
+      background-color: rgba(255, 0, 0, 0.397);
+      top: 50%; left: 50%;
+      width: 200px; height: 200px;
+      transform: translate(-50%, -50%);
+      box-sizing: border-box;
+      padding: 20px;
+      display: none;
+      z-index: 9999;
     }
     .overlay-image {
-      position: absolute; top: 50%; left: 50%;
-      width: 75px; height: 75px;
-      transform: translate(-50%, -50%);
-      pointer-events: auto;
-      display: none; z-index: 9999;
+      width: 100%; height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
     }
   </style>
 </head>
 <body>
   <div class="container" id="video-container"></div>
-
   <script>
     const VIDEO_COUNT = 16;
     const container = document.getElementById('video-container');
-    const overlayImages = [];
-    const overlayLinks = [];
+    const overlayContainers = [];
+    let overlayData = [];
     let lastWrapperFs = null;
     let overlayTimeout = null;
-    let overlayData = [];
 
-    // Request fullscreen for the entire site
     function enterSiteFullscreen() {
       const el = document.documentElement;
       if (el.requestFullscreen) el.requestFullscreen();
@@ -43,7 +54,6 @@
       else if (el.msRequestFullscreen) el.msRequestFullscreen();
     }
 
-    // Initialize HLS playback on a video element
     function initializeVideo(video, src) {
       if (Hls.isSupported()) {
         const hls = new Hls();
@@ -56,29 +66,22 @@
       }
     }
 
-    // Load overlay data (filename and URL) from CSV once
     function loadOverlayData() {
       return fetch('data/data.csv')
-        .then(r => {
-          if (!r.ok) throw new Error(r.status + ' ' + r.statusText);
-          return r.text();
-        })
-        .then(txt => txt.split(/\r?\n/).map(l => l.trim()).filter((l, i) => l && i > 0))
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.text(); })
+        .then(txt => txt.split(/\r?\n/).slice(1).map(l => l.trim()).filter(Boolean))
         .then(lines => lines.map(line => {
           const [fileName, promoUrl] = line.split(',').map(s => s.trim());
           return { fileName, promoUrl };
         }))
-        .then(data => {
-          overlayData = data;
-        })
+        .then(data => overlayData = data)
         .catch(err => console.error('Failed to load overlay data:', err));
     }
 
-    // Render a grid of videos with overlay links and images
-    function renderVideos(links) {
-      const sources = links.slice(0, VIDEO_COUNT);
+    function renderVideos(streamLinks) {
+      const sources = streamLinks.slice(0, VIDEO_COUNT);
       while (sources.length < VIDEO_COUNT) {
-        sources.push(...links.slice(0, VIDEO_COUNT - sources.length));
+        sources.push(...sources);
       }
       const cols = Math.ceil(Math.sqrt(VIDEO_COUNT));
       const rowH = 100 / Math.ceil(VIDEO_COUNT / cols);
@@ -96,104 +99,87 @@
         video.autoplay = true;
         video.muted = true;
 
-        // Create overlay link and image
         const link = document.createElement('a');
         link.target = '_blank';
         link.rel = 'noopener noreferrer';
+        const containerDiv = document.createElement('div');
+        containerDiv.className = 'overlay-container';
         const img = document.createElement('img');
         img.className = 'overlay-image';
         img.alt = `Overlay ${idx}`;
-        img.addEventListener('error', () => console.error('Overlay failed to load:', img.src));
+        img.addEventListener('error', () => console.error('Overlay load failed:', img.src));
 
-        link.appendChild(img);
+        containerDiv.appendChild(img);
+        link.appendChild(containerDiv);
         wrapper.appendChild(video);
         wrapper.appendChild(link);
         container.appendChild(wrapper);
 
-        overlayLinks.push(link);
-        overlayImages.push(img);
-
+        overlayContainers.push({ link, containerDiv, img, video });
         initializeVideo(video, src);
 
-        // Click toggles only video fullscreen (not when clicking overlay link)
         wrapper.addEventListener('click', e => {
           if (e.target.closest('a')) return;
-          e.preventDefault();
-          e.stopPropagation();
-
-          const fsEl = document.fullscreenElement ||
-                       document.webkitFullscreenElement ||
-                       document.mozFullScreenElement ||
-                       document.msFullscreenElement;
-          const isWrapperFs = (fsEl === wrapper);
-
-          if (!isWrapperFs) {
-            overlayImages.forEach(i => i.style.display = 'none');
+          e.preventDefault(); e.stopPropagation();
+          const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
+                       document.mozFullScreenElement || document.msFullscreenElement;
+          const isFs = (fsEl === wrapper);
+          if (!isFs) {
+            overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
             lastWrapperFs = wrapper;
-            if (wrapper.requestFullscreen) wrapper.requestFullscreen();
-            else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
-            else if (wrapper.mozRequestFullScreen) wrapper.mozRequestFullScreen();
-            else if (wrapper.msRequestFullscreen) wrapper.msRequestFullscreen();
+            wrapper.requestFullscreen?.() || wrapper.webkitRequestFullscreen?.() ||
+              wrapper.mozRequestFullScreen?.() || wrapper.msRequestFullscreen?.();
             video.muted = false;
           } else {
-            if (document.exitFullscreen) document.exitFullscreen();
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-            else if (document.msExitFullscreen) document.msExitFullscreen();
+            document.exitFullscreen?.() || document.webkitExitFullscreen?.() ||
+              document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
           }
         });
       });
     }
 
-    // Handle exit from individual video fullscreen and show GIF overlays with links
     function onVideoExitFullscreen() {
-      const fsEl = document.fullscreenElement ||
-                   document.webkitFullscreenElement ||
-                   document.mozFullScreenElement ||
-                   document.msFullscreenElement;
-
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
+                   document.mozFullScreenElement || document.msFullscreenElement;
       if (lastWrapperFs && fsEl !== lastWrapperFs) {
-        const video = lastWrapperFs.querySelector('video');
+        // Mute the exited video
+        const exitedVideo = overlayContainers.find(o => o.containerDiv.closest('div.video-wrapper') === lastWrapperFs).video;
+        if (exitedVideo) exitedVideo.muted = true;
+        // Return site to fullscreen
         enterSiteFullscreen();
-        if (video) video.muted = true;
-        if (overlayTimeout) clearTimeout(overlayTimeout);
-
+        // Clear previous timeout
+        overlayTimeout && clearTimeout(overlayTimeout);
         if (!overlayData.length) {
-          console.error('No overlay data loaded.');
+          console.error('Overlay data empty');
         } else {
-          // Update all overlay images and links
-          overlayImages.forEach((img, i) => {
-            const { fileName, promoUrl } = overlayData[i % overlayData.length];
-            img.src = `data/${fileName}`;
-            overlayLinks[i].href = promoUrl;
-          });
-
-          const currentOv = lastWrapperFs.querySelector('.overlay-image');
-          overlayImages.forEach(img => {
-            if (img !== currentOv) img.style.display = 'block';
+          overlayContainers.forEach((o, i) => {
+            const data = overlayData[i % overlayData.length];
+            o.img.src = `data/${data.fileName}`;
+            o.link.href = data.promoUrl;
+            if (o.containerDiv !== lastWrapperFs.querySelector('.overlay-container')) {
+              o.containerDiv.style.display = 'block';
+            }
           });
           overlayTimeout = setTimeout(() => {
-            overlayImages.forEach(img => img.style.display = 'none');
+            overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
           }, 5000);
         }
-
         lastWrapperFs = null;
       }
     }
 
     document.addEventListener('fullscreenchange', onVideoExitFullscreen);
-    document.addEventListener('webkitfullscreenchange',    onVideoExitFullscreen);
-    document.addEventListener('mozfullscreenchange',       onVideoExitFullscreen);
-    document.addEventListener('MSFullscreenChange',        onVideoExitFullscreen);
+    document.addEventListener('webkitfullscreenchange', onVideoExitFullscreen);
+    document.addEventListener('mozfullscreenchange', onVideoExitFullscreen);
+    document.addEventListener('MSFullscreenChange', onVideoExitFullscreen);
 
-    // Initial load: fetch streams, render videos and preload overlay data
     Promise.all([
       fetch('connected.txt').then(r => r.text()),
       loadOverlayData()
     ]).then(([txt]) => {
       const links = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
       renderVideos(links);
-    }).catch(err => alert('Initialization error: ' + err.message));
+    }).catch(err => console.error('Init error:', err));
   </script>
 </body>
 </html>

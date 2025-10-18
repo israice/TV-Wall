@@ -26,7 +26,10 @@
 ## 🚀 Live Demo
 
 > **Try it instantly:**  
+
 > https://israice.github.io/LiveStream-Wall/
+
+> https://translateme.online
 
 <br/>
 
@@ -59,40 +62,28 @@ connected.txt
 
 Fork → branch → commit feat/fix
 
-<details>
+<details open>
   <summary>DEV Log</summary>
 
-### v0.0.1
 
-- Project Started date 2025.06.17
-- added index.html
-- added README.md with all needed
-- added screenshot.png to README.md
-- v0.0.1 all tested and works
-
-### v0.0.2
-
-- name of the repo updated in README.md
-- screenshot uploaded to free hosting
-- 2 dead links replaced
-
-### v0.0.3
-- added promo for 5 second when minimizing thw player
-
-### v0.0.4
-- when zoom out the video start 5 sedonds from strach
-- when zoon out dont show image on the same video 
-- when zoom out change site to full screen mode
-- added csv as database
-- webp changed to gif files
-- added spesific url on click to each gif inside csv 
-
-
-### FUTURE PLANS
-
-- create and connect github pages for deployment 
-- add scrolling to move all screen left and right
-- create script to get all m3u8 from the source at once
+- [ ] v0.0.18 - add https auto redirect
+- [x] v0.0.17 - domain added to github pages
+- [x] v0.0.16 - create and connect github pages for deployment
+- [x] v0.0.15 - added spesific url on click to each gif inside csv 
+- [x] v0.0.14 - webp changed to gif files
+- [x] v0.0.13 - added csv as database
+- [x] v0.0.12 - when zoom out change site to full screen mode
+- [x] v0.0.11 - when zoon out dont show image on the same video 
+- [x] v0.0.10 - when zoom out the video start 5 sedonds from strach
+- [x] v0.0.9 - added promo for 5 second when minimizing thw player
+- [x] v0.0.8 - 2 dead links replaced
+- [x] v0.0.7 - screenshot uploaded to free hosting
+- [x] v0.0.6 - name of the repo updated in README.md
+- [x] v0.0.5 - v0.0.1 all tested and works
+- [x] v0.0.4 - added screenshot.png to README.md
+- [x] v0.0.3 - added README.md with all needed
+- [x] v0.0.2 - added index.html
+- [x] v0.0.1 - Project Started date 2025.06.17
 
 
 ### SOURCE
@@ -102,27 +93,14 @@ https://github.com/Free-TV/IPTV/tree/master/lists
 <details>
   <summary>Github CHEATSHEET</summary>
 
-## Load last updates and replace existing local files
-
-git fetch origin; git reset --hard origin/master; git clean -fd
-
-## Select a hash from the last 10 commits
-
-git log --oneline -n 10
-
-## Use the hash to get that exact version locally
-
-git fetch origin; git checkout master; git reset --hard 1eaef8b; git clean -fdx
-
 ## Update repository
 
 git add .  
-git commit -m "added spesific url on click to each gif inside csv"  
+git commit -m "v0.0.17 - domain added to github pages"  
 git push
 
 </details>
 
-</details>
 
 ## 📄 License
 
