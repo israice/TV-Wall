@@ -63,7 +63,8 @@ Fork → branch → commit feat/fix
   <summary>DEV Log</summary>
 
 
-- [ ] v0.0.18 - add https auto redirect
+- [ ] v0.0.19 - add https auto redirect
+- [x] v0.0.18 - added adsense connection
 - [x] v0.0.17 - domain added to github pages
 - [x] v0.0.16 - create and connect github pages for deployment
 - [x] v0.0.15 - added spesific url on click to each gif inside csv 
@@ -93,7 +94,7 @@ https://github.com/Free-TV/IPTV/tree/master/lists
 ## Update repository
 
 git add .  
-git commit -m "v0.0.17 - domain added to github pages"  
+git commit -m "v0.0.18 - added adsense connection"  
 git push
 
 </details>
