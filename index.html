@@ -2,13 +2,34 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8" />
-  <title>LiveStream Wall</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Watch live news streams from around the world in real-time">
+  <title>LiveStream Wall - Global News Channels</title>
   <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  
+  <!-- Google AdSense -->
+  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3704713630797846"
+     crossorigin="anonymous"></script>
+  
   <style>
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    html, body { width: 100%; height: 100%; overflow: hidden; }
-    .container { display: flex; flex-wrap: wrap; width: 100%; height: 100%; }
-    .video-wrapper { position: relative; }
+    html, body { width: 100%; height: 100%; overflow: hidden; font-family: Arial, sans-serif; }
+    
+    .container { 
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      grid-template-rows: repeat(4, 1fr);
+      width: 100%; 
+      height: 100%; 
+      gap: 0;
+    }
+    
+    .video-wrapper { 
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+    
     .hls-video {
       object-fit: cover;
       border: none;
@@ -17,32 +38,480 @@
       height: 100%;
       display: block;
     }
+    
     .overlay-container {
       position: absolute;
-      background-color: rgba(255, 0, 0, 0.397);
-      top: 50%; left: 50%;
-      width: 200px; height: 200px;
+      background-color: rgba(255, 0, 0, 0.4);
+      top: 50%; 
+      left: 50%;
+      width: 200px; 
+      height: 200px;
       transform: translate(-50%, -50%);
-      box-sizing: border-box;
       padding: 20px;
       display: none;
       z-index: 9999;
+      border-radius: 10px;
     }
+    
     .overlay-image {
-      width: 100%; height: 100%;
+      width: 100%; 
+      height: 100%;
       object-fit: cover;
       display: block;
       pointer-events: none;
+      border-radius: 5px;
+    }
+
+    .video-wrapper:fullscreen .hls-video,
+    .video-wrapper:-webkit-full-screen .hls-video,
+    .video-wrapper:-moz-full-screen .hls-video {
+      object-fit: contain;
+    }
+
+    /* Footer styles */
+    .footer {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      background: rgba(0, 0, 0, 0.8);
+      padding: 10px;
+      text-align: center;
+      font-size: 12px;
+      color: #fff;
+      z-index: 10000;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      gap: 20px;
+      visibility: hidden;
+    }
+
+    .footer a {
+      color: #4CAF50;
+      text-decoration: none;
+      padding: 5px 10px;
+      border-radius: 3px;
+      transition: background 0.3s;
+    }
+
+    .footer a:hover {
+      background: rgba(76, 175, 80, 0.2);
+      text-decoration: underline;
+    }
+
+    .page-content {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #fff;
+      z-index: 10001;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    .page-content.active {
+      display: block;
+    }
+
+    .page-header {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .page-header h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .page-header p {
+      line-height: 1.6;
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    .close-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      z-index: 10002;
+    }
+
+    .close-btn:hover {
+      background: #45a049;
+    }
+
+    .footer.hidden {
+      display: none;
     }
   </style>
-  <script async src="https://pagead2.googlesyndication.com/pagead/js/adsbygoogle.js?client=ca-pub-3704713630797846"
-     crossorigin="anonymous"></script>
 </head>
 <body>
-  <div class="container" id="video-container"></div>
+  <!-- AdSense Header Banner (Optional) -->
+  <!-- <div style="text-align: center; padding: 10px 0; background: #f5f5f5;"> -->
+    <!-- Horizontal Banner Ad - Replace with your ad code -->
+    <!-- <ins class="adsbygoogle"
+         style="display:block"
+         data-ad-client="ca-pub-3704713630797846"
+         data-ad-slot="XXXXXXXXXX"
+         data-ad-format="horizontal"
+         data-full-width-responsive="true"></ins>
+    <script>
+         (adsbygoogle = window.adsbygoogle || []).push({});
+    </script>
+  </div> -->
+
+  <div class="container" id="video-container">
+    
+    <!-- Video 1: Al Jazeera English -->
+    <div class="video-wrapper" data-index="0">
+      <video class="hls-video" 
+             data-src="https://live-hls-web-aje.getaj.net/AJE/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 0">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 2: Al Jazeera Arabic -->
+    <div class="video-wrapper" data-index="1">
+      <video class="hls-video" 
+             data-src="https://live-hls-v3-aja.getaj.net/AJA-V3/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 1">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 3: Zagros TV -->
+    <div class="video-wrapper" data-index="2">
+      <video class="hls-video" 
+             data-src="https://5a3ed7a72ed4b.streamlock.net/zagrostv/SMIL:myStream.smil/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 2">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 4: Bloomberg TV -->
+    <div class="video-wrapper" data-index="3">
+      <video class="hls-video" 
+             data-src="https://dai.google.com/linear/hls/event/Sid4xiTQTkCT1SLu6rjUSQ/master.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 3">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 5: Balkan Web -->
+    <div class="video-wrapper" data-index="4">
+      <video class="hls-video" 
+             data-src="https://tv.balkanweb.com/news24/livestream/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 4">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 6: Syri TV -->
+    <div class="video-wrapper" data-index="5">
+      <video class="hls-video" 
+             data-src="https://stream.syritv.al/SyriTV/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 5">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 7: CBC TV -->
+    <div class="video-wrapper" data-index="6">
+      <video class="hls-video" 
+             data-src="https://stream.cbctv.az:5443/LiveApp/streams/cbctv.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 6">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 8: CBC News -->
+    <div class="video-wrapper" data-index="7">
+      <video class="hls-video" 
+             data-src="https://d7z3qjdsxbwoq.cloudfront.net/groupa/live/f9809cea-1e07-47cd-a94d-2ddd3e1351db/live.isml/.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 7">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 9: RDI -->
+    <div class="video-wrapper" data-index="8">
+      <video class="hls-video" 
+             data-src="https://rcavlive.akamaized.net/hls/live/704025/xcanrdi/master.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 8">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 10: Kan 11 -->
+    <div class="video-wrapper" data-index="9">
+      <video class="hls-video" 
+             data-src="https://kan11.media.kan.org.il/hls/live/2024514/2024514/master.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 9">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 11: i24 News -->
+    <div class="video-wrapper" data-index="10">
+      <video class="hls-video" 
+             data-src="https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 10">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 12: Dijlah -->
+    <div class="video-wrapper" data-index="11">
+      <video class="hls-video" 
+             data-src="https://ghaasiflu.online/Dijlah/tracks-v1a1/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 11">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 13: Alsharqiya -->
+    <div class="video-wrapper" data-index="12">
+      <video class="hls-video" 
+             data-src="https://5d94523502c2d.streamlock.net/alsharqiyalive/mystream/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 12">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 14: Russia 24 -->
+    <div class="video-wrapper" data-index="13">
+      <video class="hls-video" 
+             data-src="https://ruvlive.akamaized.net/out/v1/2ff7673de40f419fa5164498fae89089/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 13">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 15: A2D TV -->
+    <div class="video-wrapper" data-index="14">
+      <video class="hls-video" 
+             data-src="https://live.streaming.a2d.tv/asset/20025962.isml/.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 14">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 16: Onni TV -->
+    <div class="video-wrapper" data-index="15">
+      <video class="hls-video" 
+             data-src="https://onnitv.digitacdn.net/live/ott/onnitv/playlist.m3u8?organizationId=83459409&suiteItemId=83459780"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 15">
+        </div>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- Footer with required links -->
+  <div class="footer" id="footer">
+    <a href="#about" onclick="showPage('about'); return false;">About Us</a>
+    <a href="#privacy" onclick="showPage('privacy'); return false;">Privacy Policy</a>
+    <a href="#contact" onclick="showPage('contact'); return false;">Contact</a>
+    <span>© 2025 LiveStream Wall. All rights reserved.</span>
+  </div>
+
+  <!-- About Us Page -->
+  <div class="page-content" id="about">
+    <button class="close-btn" onclick="closePage()">× Close</button>
+    <div class="page-header">
+      <h1>About LiveStream Wall</h1>
+      <p>LiveStream Wall is a free platform that aggregates publicly available live news streams from around the world, providing users with access to real-time news coverage from various international broadcasters.</p>
+      
+      <h2>Our Mission</h2>
+      <p>We believe in free access to information and transparency. Our platform curates publicly available live streams from reputable news sources, allowing you to stay informed about global events as they unfold.</p>
+      
+      <h2>Content Sources</h2>
+      <p>All video streams displayed on this website are publicly available broadcasts from official news channels. We do not host or store any video content on our servers. All streams are embedded directly from their original sources.</p>
+      
+      <h2>Advertising</h2>
+      <p>This website uses Google AdSense to display advertisements. Revenue from these ads helps us maintain and improve the service. We do not control the specific ads shown to you - they are personalized by Google based on your browsing history and preferences.</p>
+      
+      <h2>No Registration Required</h2>
+      <p>LiveStream Wall is completely free to use and requires no registration or personal information from users.</p>
+    </div>
+  </div>
+
+  <!-- Privacy Policy Page -->
+  <div class="page-content" id="privacy">
+    <button class="close-btn" onclick="closePage()">× Close</button>
+    <div class="page-header">
+      <h1>Privacy Policy</h1>
+      <p><strong>Last Updated: October 30, 2025</strong></p>
+      
+      <h2>1. Information We Collect</h2>
+      <p>LiveStream Wall does not directly collect, store, or process any personal information from users. We do not require registration, login, or any form of personal data submission.</p>
+      
+      <h2>2. Third-Party Services</h2>
+      <p>Our website uses the following third-party services that may collect information:</p>
+      
+      <h3>Google AdSense</h3>
+      <p>We use Google AdSense to display advertisements on our website. Google AdSense uses cookies and similar technologies to:</p>
+      <ul>
+        <li>Serve ads based on your prior visits to our website or other websites</li>
+        <li>Measure ad performance and provide reporting</li>
+        <li>Prevent the same ads from being continuously shown to you</li>
+      </ul>
+      
+      <h3>Cookies and Tracking Technologies</h3>
+      <p>Third-party vendors, including Google, use cookies to serve ads based on a user's prior visits to our website or other websites. Google's use of advertising cookies enables it and its partners to serve ads to users based on their visit to our sites and/or other sites on the Internet.</p>
+      
+      <h2>3. Your Choices and Rights</h2>
+      <p>You have the following options regarding cookies and personalized advertising:</p>
+      <ul>
+        <li>You may opt out of personalized advertising by visiting <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a></li>
+        <li>You can opt out of third-party vendors' use of cookies by visiting <a href="http://www.aboutads.info/choices/" target="_blank" rel="noopener noreferrer">aboutads.info</a></li>
+        <li>European users can visit <a href="http://www.youronlinechoices.eu/" target="_blank" rel="noopener noreferrer">youronlinechoices.eu</a></li>
+        <li>You can manage cookies through your browser settings</li>
+      </ul>
+      
+      <h2>4. GDPR Compliance (EU Users)</h2>
+      <p>If you are located in the European Economic Area (EEA), you have certain data protection rights under GDPR. Since we do not collect personal information directly, these rights primarily relate to third-party services:</p>
+      <ul>
+        <li>Right to access and rectify your data held by third parties</li>
+        <li>Right to object to processing</li>
+        <li>Right to withdraw consent for cookies</li>
+      </ul>
+      
+      <h2>5. Video Content</h2>
+      <p>All video streams are embedded from third-party sources. We do not host, store, or control these streams. Each broadcaster may have their own privacy policies and data collection practices.</p>
+      
+      <h2>6. Children's Privacy</h2>
+      <p>Our website is not directed to children under the age of 13 (or 16 in the EEA). We do not knowingly collect information from children.</p>
+      
+      <h2>7. International Data Transfers</h2>
+      <p>Google AdSense may transfer and process data internationally. Please refer to <a href="https://policies.google.com/privacy" target="_blank" rel="noopener noreferrer">Google's Privacy Policy</a> for more information.</p>
+      
+      <h2>8. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. The "Last Updated" date at the top of this page indicates when the policy was last revised.</p>
+      
+      <h2>9. Contact Information</h2>
+      <p>If you have questions about this Privacy Policy, please use our Contact page.</p>
+      
+      <h3>Additional Resources</h3>
+      <p>Learn more about how Google uses data: <a href="https://policies.google.com/technologies/partner-sites" target="_blank" rel="noopener noreferrer">How Google uses data when you use our partners' sites or apps</a></p>
+    </div>
+  </div>
+
+  <!-- Contact Page -->
+  <div class="page-content" id="contact">
+    <button class="close-btn" onclick="closePage()">× Close</button>
+    <div class="page-header">
+      <h1>Contact Us</h1>
+      <p>We welcome your feedback, questions, and concerns about LiveStream Wall.</p>
+      
+      <h2>General Inquiries</h2>
+      <p>For general questions about our service, please note that we are a free, publicly available platform that aggregates news streams.</p>
+      
+      <h2>Privacy Concerns</h2>
+      <p>If you have questions about our Privacy Policy or data practices, please review our Privacy Policy page first. For specific concerns, you can contact us through the following methods:</p>
+      
+      <h2>Technical Issues</h2>
+      <p>If you experience technical problems with video streams:</p>
+      <ul>
+        <li>Ensure you have a stable internet connection</li>
+        <li>Try refreshing the page</li>
+        <li>Clear your browser cache and cookies</li>
+        <li>Try a different browser</li>
+      </ul>
+      <p>Please note: We do not control the availability or quality of third-party streams. If a specific channel is not working, the issue is likely on the broadcaster's end.</p>
+      
+      <h2>Content Removal Requests</h2>
+      <p>All video content is embedded from official, publicly available sources. We do not host any content on our servers. If you believe any content violates your rights, please contact the original broadcaster directly.</p>
+      
+      <h2>Advertising Issues</h2>
+      <p>For concerns about specific advertisements displayed on our site, please use Google's ad reporting tools or visit your <a href="https://www.google.com/settings/ads" target="_blank" rel="noopener noreferrer">Google Ads Settings</a>.</p>
+      
+      <h2>Response Time</h2>
+      <p>We strive to respond to all legitimate inquiries within 5-7 business days.</p>
+    </div>
+  </div>
+
   <script>
-    const VIDEO_COUNT = 16;
-    const container = document.getElementById('video-container');
+    // Page navigation functions
+    function showPage(pageId) {
+      document.querySelectorAll('.page-content').forEach(page => {
+        page.classList.remove('active');
+      });
+      document.getElementById(pageId).classList.add('active');
+      document.getElementById('footer').classList.add('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePage() {
+      document.querySelectorAll('.page-content').forEach(page => {
+        page.classList.remove('active');
+      });
+      document.getElementById('footer').classList.remove('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    // Video and overlay management
     const overlayContainers = [];
     let overlayData = [];
     let lastWrapperFs = null;
@@ -58,11 +527,15 @@
 
     function initializeVideo(video, src) {
       if (Hls.isSupported()) {
-        const hls = new Hls();
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 90
+        });
         hls.loadSource(src);
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
-      } else {
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
         video.src = src;
         video.addEventListener('loadedmetadata', () => video.play().catch(() => {}));
       }
@@ -80,61 +553,48 @@
         .catch(err => console.error('Failed to load overlay data:', err));
     }
 
-    function renderVideos(streamLinks) {
-      const sources = streamLinks.slice(0, VIDEO_COUNT);
-      while (sources.length < VIDEO_COUNT) {
-        sources.push(...sources);
-      }
-      const cols = Math.ceil(Math.sqrt(VIDEO_COUNT));
-      const rowH = 100 / Math.ceil(VIDEO_COUNT / cols);
-      const colW = 100 / cols;
-
-      sources.forEach((src, idx) => {
-        const wrapper = document.createElement('div');
-        wrapper.className = 'video-wrapper';
-        wrapper.style.width = `${colW}%`;
-        wrapper.style.height = `${rowH}%`;
-
-        const video = document.createElement('video');
-        video.className = 'hls-video';
-        video.controls = true;
-        video.autoplay = true;
-        video.muted = true;
-
-        const link = document.createElement('a');
-        link.target = '_blank';
-        link.rel = 'noopener noreferrer';
-        const containerDiv = document.createElement('div');
-        containerDiv.className = 'overlay-container';
-        const img = document.createElement('img');
-        img.className = 'overlay-image';
-        img.alt = `Overlay ${idx}`;
-        img.addEventListener('error', () => console.error('Overlay load failed:', img.src));
-
-        containerDiv.appendChild(img);
-        link.appendChild(containerDiv);
-        wrapper.appendChild(video);
-        wrapper.appendChild(link);
-        container.appendChild(wrapper);
+    function initializeVideos() {
+      const wrappers = document.querySelectorAll('.video-wrapper');
+      
+      wrappers.forEach((wrapper, idx) => {
+        const video = wrapper.querySelector('.hls-video');
+        const link = wrapper.querySelector('a');
+        const containerDiv = wrapper.querySelector('.overlay-container');
+        const img = wrapper.querySelector('.overlay-image');
+        const src = video.getAttribute('data-src');
 
         overlayContainers.push({ link, containerDiv, img, video });
-        initializeVideo(video, src);
+        
+        if (src) {
+          initializeVideo(video, src);
+        }
+
+        img.addEventListener('error', () => console.error('Overlay load failed:', img.src));
 
         wrapper.addEventListener('click', e => {
           if (e.target.closest('a')) return;
-          e.preventDefault(); e.stopPropagation();
+          e.preventDefault(); 
+          e.stopPropagation();
+          
           const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
                        document.mozFullScreenElement || document.msFullscreenElement;
           const isFs = (fsEl === wrapper);
+          
           if (!isFs) {
             overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
             lastWrapperFs = wrapper;
-            wrapper.requestFullscreen?.() || wrapper.webkitRequestFullscreen?.() ||
-              wrapper.mozRequestFullScreen?.() || wrapper.msRequestFullscreen?.();
+            
+            if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+            else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+            else if (wrapper.mozRequestFullScreen) wrapper.mozRequestFullScreen();
+            else if (wrapper.msRequestFullscreen) wrapper.msRequestFullscreen();
+            
             video.muted = false;
           } else {
-            document.exitFullscreen?.() || document.webkitExitFullscreen?.() ||
-              document.mozCancelFullScreen?.() || document.msExitFullscreen?.();
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
           }
         });
       });
@@ -143,14 +603,18 @@
     function onVideoExitFullscreen() {
       const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
                    document.mozFullScreenElement || document.msFullscreenElement;
+      
       if (lastWrapperFs && fsEl !== lastWrapperFs) {
-        // Mute the exited video
-        const exitedVideo = overlayContainers.find(o => o.containerDiv.closest('div.video-wrapper') === lastWrapperFs).video;
+        const exitedVideo = overlayContainers.find(o => 
+          o.containerDiv.closest('div.video-wrapper') === lastWrapperFs
+        )?.video;
+        
         if (exitedVideo) exitedVideo.muted = true;
-        // Return site to fullscreen
+        
         enterSiteFullscreen();
-        // Clear previous timeout
-        overlayTimeout && clearTimeout(overlayTimeout);
+        
+        if (overlayTimeout) clearTimeout(overlayTimeout);
+        
         if (!overlayData.length) {
           console.error('Overlay data empty');
         } else {
@@ -158,14 +622,17 @@
             const data = overlayData[i % overlayData.length];
             o.img.src = `data/${data.fileName}`;
             o.link.href = data.promoUrl;
+            
             if (o.containerDiv !== lastWrapperFs.querySelector('.overlay-container')) {
               o.containerDiv.style.display = 'block';
             }
           });
+          
           overlayTimeout = setTimeout(() => {
             overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
           }, 5000);
         }
+        
         lastWrapperFs = null;
       }
     }
@@ -175,12 +642,9 @@
     document.addEventListener('mozfullscreenchange', onVideoExitFullscreen);
     document.addEventListener('MSFullscreenChange', onVideoExitFullscreen);
 
-    Promise.all([
-      fetch('connected.txt').then(r => r.text()),
-      loadOverlayData()
-    ]).then(([txt]) => {
-      const links = txt.split(/\r?\n/).map(l => l.trim()).filter(Boolean);
-      renderVideos(links);
+    // Инициализация
+    loadOverlayData().then(() => {
+      initializeVideos();
     }).catch(err => console.error('Init error:', err));
   </script>
 </body>

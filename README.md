@@ -63,7 +63,8 @@ Fork → branch → commit feat/fix
   <summary>DEV Log</summary>
 
 
-- [ ] v0.0.20 - add google ads
+- [ ] v0.0.21 - add google ads
+- [X] v0.0.20 - fix html for ads aprooving stage
 - [X] v0.0.19 - add https auto redirect
 - [x] v0.0.18 - added adsense connection
 - [x] v0.0.17 - domain added to github pages
@@ -95,7 +96,7 @@ https://github.com/Free-TV/IPTV/tree/master/lists
 ## Update repository
 
 git add .  
-git commit -m "v0.0.19 - add https auto redirect"  
+git commit -m "v0.0.20 - fix html for ads aprooving stage"  
 git push
 
 </details>
