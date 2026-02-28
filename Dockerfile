@@ -8,6 +8,6 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY SETTINGS.py run.py ./
 COPY FRONTEND/ FRONTEND/
 
-EXPOSE 8000
+EXPOSE 5013
 
 CMD ["python", "run.py"]

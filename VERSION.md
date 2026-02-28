@@ -40,14 +40,13 @@ python run.py
 
 # UPDATE
 git add .
-git commit -m "v0.0.18 - fixed HOT PAGE RELOAD"
+git commit -m "v0.0.23 - starting docker on server"
 git push
-python run.py
 
 # DEV LOG
 v0.0.18 - added adsense connection
 v0.0.19 - add https auto redirect
 v0.0.20 - fix html for ads aprooving stage
 v0.0.21 - add google ads
-
 v0.0.22 - added API request handling
+v0.0.23 - starting docker on server

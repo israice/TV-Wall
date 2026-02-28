@@ -4,7 +4,7 @@ from pathlib import Path
 
 APP_TITLE = "LiveStream TV Wall"
 APP_HOST = os.environ.get("APP_HOST", "127.0.0.1")
-APP_PORT = int(os.environ.get("APP_PORT", 8000))
+APP_PORT = int(os.environ.get("APP_PORT", 5013))
 APP_RELOAD = False
 DEV_MODE = os.environ.get("DEV_MODE", "1").lower() in ("1", "true")
 FRONTEND_STREAMS_COUNT = 9

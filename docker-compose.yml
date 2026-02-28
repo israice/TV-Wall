@@ -4,7 +4,7 @@ services:
     container_name: livestream-tv-wall
     restart: unless-stopped
     ports:
-      - "80:8000"
+      - "80:5013"
     volumes:
       - ./DATA:/app/DATA
     environment:
