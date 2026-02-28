@@ -1,3 +1,2 @@
-test.py
-test.html
-git rm README.md
+.vscode
+__pycache__

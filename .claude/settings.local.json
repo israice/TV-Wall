@@ -1,0 +1,23 @@
+{
+  "permissions": {
+    "allow": [
+      "WebFetch(domain:cdn.simpleicons.org)",
+      "WebSearch",
+      "WebFetch(domain:www.vectorlogo.zone)",
+      "WebFetch(domain:cryptologos.cc)",
+      "WebFetch(domain:brandfetch.com)",
+      "WebFetch(domain:cdn.brandfetch.io)",
+      "WebFetch(domain:commons.wikimedia.org)",
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:cdn.jsdelivr.net)",
+      "WebFetch(domain:api.iconify.design)",
+      "Bash(curl:*)",
+      "WebFetch(domain:streamelements.com)",
+      "WebFetch(domain:worldvectorlogo.com)",
+      "WebFetch(domain:seeklogo.com)",
+      "WebFetch(domain:cdn.streamelements.com)",
+      "Bash(mv:*)",
+      "Bash(\"C:\\\\0_PROJECTS\\\\projects-factory\\\\MY_REPOS\\\\HTML-LiveStream-TV-Wall\\\\DATA\\\\BUTTOM_ICONS\\\\tip-jar.svg\":*)"
+    ]
+  }
+}

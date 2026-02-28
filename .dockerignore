@@ -1,0 +1,9 @@
+.git
+.github
+.vscode
+.claude
+.playwright-cli
+__pycache__
+TOOLS
+*.md
+LICENSE

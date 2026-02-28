@@ -1,0 +1,1811 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="Watch live news streams from around the world in real-time">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>LiveStream Wall - Global News Channels</title>
+  <script src="https://cdn.jsdelivr.net/npm/hls.js@latest"></script>
+  
+  <style>
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+    html {
+      width: 100%;
+      height: 100%;
+      overflow-x: hidden;
+      overflow-y: auto;
+      -ms-overflow-style: none;
+      scrollbar-width: none;
+    }
+    html::-webkit-scrollbar { display: none; }
+
+    body {
+      width: 100%;
+      min-height: 100%;
+      overflow: visible;
+      font-family: Arial, sans-serif;
+    }
+    
+    .container {
+      display: flex;
+      flex-direction: column;
+      width: 100%;
+      gap: 0;
+    }
+
+    .stream-page {
+      display: grid;
+      width: 100%;
+      height: 100vh;
+      overflow: hidden;
+    }
+    
+    .video-wrapper { 
+      position: relative;
+      background: #000;
+      overflow: hidden;
+    }
+
+    .video-wrapper.broken::after {
+      content: "Stream unavailable";
+      position: absolute;
+      left: 50%;
+      top: 50%;
+      transform: translate(-50%, -50%);
+      color: #ccc;
+      font-size: 14px;
+      pointer-events: none;
+    }
+    
+    .hls-video {
+      object-fit: cover;
+      border: none;
+      cursor: pointer;
+      width: 100%;
+      height: 100%;
+      display: block;
+    }
+    
+    .overlay-container {
+      position: absolute;
+      background-color: rgba(255, 0, 0, 0.4);
+      top: 50%; 
+      left: 50%;
+      width: 200px; 
+      height: 200px;
+      transform: translate(-50%, -50%);
+      padding: 20px;
+      display: none;
+      z-index: 9999;
+      border-radius: 10px;
+    }
+    
+    .overlay-image {
+      width: 100%; 
+      height: 100%;
+      object-fit: cover;
+      display: block;
+      pointer-events: none;
+      border-radius: 5px;
+    }
+
+    .video-wrapper:fullscreen .hls-video,
+    .video-wrapper:-webkit-full-screen .hls-video,
+    .video-wrapper:-moz-full-screen .hls-video {
+      object-fit: contain;
+    }
+
+    .page-content {
+      display: none;
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: #fff;
+      z-index: 10001;
+      overflow-y: auto;
+      padding: 40px 20px;
+    }
+
+    .page-content.active {
+      display: block;
+    }
+
+    .page-header {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+
+    .page-header h1 {
+      color: #333;
+      margin-bottom: 20px;
+    }
+
+    .page-header p {
+      line-height: 1.6;
+      color: #555;
+      margin-bottom: 15px;
+    }
+
+    .close-btn {
+      position: fixed;
+      top: 20px;
+      right: 20px;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
+      z-index: 10002;
+    }
+
+    .close-btn:hover {
+      background: #45a049;
+    }
+
+    .side-panel-edge-trigger {
+      position: fixed;
+      top: 0;
+      right: 0;
+      width: 10px;
+      height: 100vh;
+      z-index: 10010;
+      background: transparent;
+    }
+
+    .left-panel-edge-trigger {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 10px;
+      height: 100vh;
+      z-index: 10010;
+      background: transparent;
+    }
+
+    .top-panel-edge-trigger {
+      position: fixed;
+      top: 0;
+      left: 0;
+      width: 100vw;
+      height: 10px;
+      z-index: 10010;
+      background: transparent;
+    }
+
+    .side-icon-panel {
+      position: fixed;
+      top: 50%;
+      right: -96px;
+      transform: translateY(-50%);
+      height: 60vh;
+      width: 84px;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-around;
+      align-items: center;
+      padding: 14px 10px;
+      background: rgba(22, 22, 22, 0.88);
+      border-left: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 14px 0 0 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: right 0.2s ease, opacity 0.2s ease;
+      z-index: 10011;
+    }
+
+    .side-icon-panel.visible {
+      right: 0;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .side-icon-panel.left {
+      left: -96px;
+      right: auto;
+      border-left: none;
+      border-right: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 0 14px 14px 0;
+      justify-content: flex-start;
+      gap: 10px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      scrollbar-width: none;
+      overscroll-behavior: contain;
+    }
+
+    .side-icon-panel.left::-webkit-scrollbar {
+      display: none;
+    }
+
+    .side-icon-panel.left.visible {
+      left: 0;
+      right: auto;
+    }
+
+    .side-icon-btn {
+      width: 54px;
+      height: 54px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .side-icon-btn.active {
+      background: rgba(255, 255, 255, 0.2);
+      border-color: rgba(255, 255, 255, 0.65);
+    }
+
+    .side-icon-btn svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .side-icon-panel:not(.left) .side-icon-btn {
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .side-icon-label {
+      font-size: 10px;
+      font-weight: 700;
+      letter-spacing: 0.5px;
+      line-height: 1;
+      color: #fff;
+      user-select: none;
+    }
+
+    .side-icon-btn svg.flag-icon {
+      width: 30px;
+      height: 22px;
+      stroke: none;
+    }
+
+    .country-flag-emoji {
+      font-size: 22px;
+      line-height: 1;
+    }
+
+    .country-flag-image {
+      width: 30px;
+      height: 22px;
+      object-fit: cover;
+      border-radius: 3px;
+      display: block;
+    }
+
+    .top-icon-panel {
+      position: fixed;
+      top: -94px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 236px;
+      height: 74px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 10px 14px;
+      background: rgba(22, 22, 22, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-top: none;
+      border-radius: 0 0 14px 14px;
+      opacity: 0;
+      pointer-events: none;
+      transition: top 0.2s ease, opacity 0.2s ease;
+      z-index: 10011;
+    }
+
+    .top-icon-panel.visible {
+      top: 0;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .top-icon-btn {
+      width: 54px;
+      height: 54px;
+      border: 1px solid rgba(255, 255, 255, 0.22);
+      border-radius: 12px;
+      background: rgba(255, 255, 255, 0.08);
+      color: #fff;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      padding: 0;
+    }
+
+    .top-icon-btn:disabled {
+      color: rgba(255, 255, 255, 0.35);
+      border-color: rgba(255, 255, 255, 0.14);
+      background: rgba(255, 255, 255, 0.03);
+      cursor: default;
+    }
+
+    .top-icon-btn svg {
+      width: 24px;
+      height: 24px;
+      stroke: currentColor;
+      fill: none;
+      stroke-width: 1.8;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+    }
+
+    .top-icon-value {
+      min-width: 58px;
+      text-align: center;
+      color: #fff;
+      font-size: 34px;
+      font-weight: 700;
+      line-height: 1;
+      user-select: none;
+    }
+
+    .bottom-panel-edge-trigger {
+      position: fixed;
+      bottom: 0;
+      left: 0;
+      width: 100vw;
+      height: 10px;
+      z-index: 10010;
+      background: transparent;
+    }
+
+    .bottom-icon-panel {
+      position: fixed;
+      bottom: -94px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: min(94vw, 1040px);
+      height: 92px;
+      display: flex;
+      align-items: center;
+      justify-content: flex-start;
+      gap: 10px;
+      padding: 10px 14px 12px;
+      background: rgba(22, 22, 22, 0.88);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-bottom: none;
+      border-radius: 14px 14px 0 0;
+      opacity: 0;
+      pointer-events: none;
+      transition: bottom 0.2s ease, opacity 0.2s ease;
+      z-index: 10011;
+      overflow-x: auto;
+      overflow-y: hidden;
+      scrollbar-width: none;
+      -ms-overflow-style: none;
+      touch-action: pan-x;
+      overscroll-behavior: contain;
+    }
+
+    .bottom-icon-panel::-webkit-scrollbar {
+      display: none;
+    }
+
+    .bottom-icon-panel.visible {
+      bottom: 0;
+      opacity: 1;
+      pointer-events: auto;
+    }
+
+    .bottom-icon-panel .side-icon-btn {
+      flex: 0 0 auto;
+      flex-direction: column;
+      gap: 4px;
+      width: 72px;
+      height: 64px;
+      border-radius: 10px;
+    }
+
+    .bottom-icon-panel .side-icon-label {
+      font-size: 9px;
+      letter-spacing: 0.35px;
+      max-width: 64px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .support-icon-glyph {
+      width: 20px;
+      height: 20px;
+      object-fit: contain;
+      pointer-events: none;
+    }
+
+    .stream-context-menu {
+      position: fixed;
+      display: none;
+      flex-direction: column;
+      padding: 6px 0;
+      background: rgba(22, 22, 22, 0.95);
+      border: 1px solid rgba(255, 255, 255, 0.2);
+      border-radius: 12px;
+      z-index: 10100;
+      min-width: 180px;
+      opacity: 0;
+      transition: opacity 0.15s ease;
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
+    }
+    .stream-context-menu.visible {
+      display: flex;
+      opacity: 1;
+    }
+    .context-menu-btn {
+      display: block;
+      width: 100%;
+      padding: 10px 18px;
+      background: none;
+      border: none;
+      color: #fff;
+      font-family: Arial, sans-serif;
+      font-size: 13px;
+      font-weight: 600;
+      letter-spacing: 0.3px;
+      text-align: left;
+      cursor: pointer;
+      transition: background-color 0.15s ease;
+    }
+    .context-menu-btn:hover {
+      background: rgba(255, 255, 255, 0.1);
+    }
+    .context-menu-btn:active {
+      background: rgba(255, 255, 255, 0.18);
+    }
+    .context-menu-divider {
+      height: 1px;
+      margin: 4px 10px;
+      background: rgba(255, 255, 255, 0.12);
+    }
+
+
+  </style>
+</head>
+<body>
+  <div class="top-panel-edge-trigger" id="top-panel-edge-trigger"></div>
+  <aside class="top-icon-panel" id="top-icon-panel" aria-label="Top controls">
+    <button class="top-icon-btn" id="top-icon-left" type="button" aria-label="Move left">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M15 6l-6 6 6 6"></path>
+      </svg>
+    </button>
+    <div class="top-icon-value" id="top-icon-value" aria-label="Current value">4</div>
+    <button class="top-icon-btn" id="top-icon-right" type="button" aria-label="Move right">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 6l6 6-6 6"></path>
+      </svg>
+    </button>
+  </aside>
+
+  <div class="left-panel-edge-trigger" id="left-panel-edge-trigger"></div>
+  <aside class="side-icon-panel left" id="left-icon-panel" aria-label="Country filters"></aside>
+
+  <div class="side-panel-edge-trigger" id="side-panel-edge-trigger"></div>
+  <aside class="side-icon-panel" id="side-icon-panel" aria-label="Quick actions">
+    <button class="side-icon-btn active" id="side-icon-news" type="button" aria-label="News streams">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="14" rx="2"></rect>
+        <path d="M8 9h8"></path>
+        <path d="M8 12h8"></path>
+        <path d="M8 15h5"></path>
+      </svg>
+      <span class="side-icon-label" aria-hidden="true">NEWS</span>
+    </button>
+    <button class="side-icon-btn" id="side-icon-sport" type="button" aria-label="Sport streams">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <ellipse cx="10" cy="9" rx="5" ry="6"></ellipse>
+        <path d="M13.5 13.5l4.8 4.8"></path>
+        <path d="M16.2 16.2l-1.4 1.4"></path>
+        <circle cx="18.5" cy="6.5" r="1.3"></circle>
+      </svg>
+      <span class="side-icon-label" aria-hidden="true">SPORT</span>
+    </button>
+    <button class="side-icon-btn" id="side-icon-music" type="button" aria-label="Music streams">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <path d="M9 18V5l12-2v13"></path>
+        <circle cx="6" cy="18" r="3"></circle>
+        <circle cx="18" cy="16" r="3"></circle>
+      </svg>
+      <span class="side-icon-label" aria-hidden="true">MUSIC</span>
+    </button>
+    <button class="side-icon-btn" id="side-icon-all" type="button" aria-label="All streams">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <circle cx="12" cy="12" r="8"></circle>
+        <path d="M4 12h16"></path>
+        <path d="M12 4a12 12 0 0 0 0 16"></path>
+        <path d="M12 4a12 12 0 0 1 0 16"></path>
+      </svg>
+      <span class="side-icon-label" aria-hidden="true">ALL</span>
+    </button>
+  </aside>
+
+  <div class="bottom-panel-edge-trigger" id="bottom-panel-edge-trigger"></div>
+  <aside class="bottom-icon-panel" id="bottom-icon-panel" aria-label="Support platforms">
+    <button class="side-icon-btn" id="bottom-icon-buy-me-a-coffee" type="button" aria-label="Buy Me a Coffee">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/buy-me-a-coffee.svg" alt="Buy Me a Coffee">
+      <span class="side-icon-label" aria-hidden="true">BuyMeCoffee</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-ko-fi" type="button" aria-label="Ko-fi">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/ko-fi.svg" alt="Ko-fi">
+      <span class="side-icon-label" aria-hidden="true">Ko-fi</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-patreon" type="button" aria-label="Patreon">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/patreon.svg" alt="Patreon">
+      <span class="side-icon-label" aria-hidden="true">Patreon</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-open-collective" type="button" aria-label="Open Collective">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/open-collective.svg" alt="Open Collective">
+      <span class="side-icon-label" aria-hidden="true">OpenCollective</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-liberapay" type="button" aria-label="Liberapay">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/liberapay.svg" alt="Liberapay">
+      <span class="side-icon-label" aria-hidden="true">Liberapay</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-paypal-me" type="button" aria-label="Paypal.me">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/paypal-me.svg" alt="PayPal.me">
+      <span class="side-icon-label" aria-hidden="true">Paypal.me</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-stripe-links" type="button" aria-label="Stripe Payment Links">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/stripe-links.svg" alt="Stripe">
+      <span class="side-icon-label" aria-hidden="true">StripeLinks</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-tipeee" type="button" aria-label="Tipeee">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/tipeee.svg" alt="Tipeee">
+      <span class="side-icon-label" aria-hidden="true">Tipeee</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-buy-me-a-pizza" type="button" aria-label="Buy Me a Pizza">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/buy-me-a-pizza.svg" alt="Buy Me a Pizza">
+      <span class="side-icon-label" aria-hidden="true">BuyMePizza</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-venmo" type="button" aria-label="Venmo">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/venmo.svg" alt="Venmo">
+      <span class="side-icon-label" aria-hidden="true">Venmo</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-cash-app" type="button" aria-label="Cash App">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/cash-app.svg" alt="Cash App">
+      <span class="side-icon-label" aria-hidden="true">CashApp</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-revolut-me" type="button" aria-label="Revolut.me">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/revolut-me.svg" alt="Revolut.me">
+      <span class="side-icon-label" aria-hidden="true">Revolut.me</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-zelle" type="button" aria-label="Zelle">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/zelle.svg" alt="Zelle">
+      <span class="side-icon-label" aria-hidden="true">Zelle</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-gitcoin" type="button" aria-label="Gitcoin">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/gitcoin.svg" alt="Gitcoin">
+      <span class="side-icon-label" aria-hidden="true">Gitcoin</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-opensource-funding-dao" type="button" aria-label="OpenSourceFundingDAO">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/opensource-funding-dao.svg" alt="OpenSourceFundingDAO">
+      <span class="side-icon-label" aria-hidden="true">OSFundingDAO</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-crypto-wallets" type="button" aria-label="BTC / ETH / USDT wallet links">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/crypto-wallets.svg" alt="BTC/ETH/USDT">
+      <span class="side-icon-label" aria-hidden="true">BTC/ETH/USDT</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-coil" type="button" aria-label="Coil">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/coil.svg" alt="Coil">
+      <span class="side-icon-label" aria-hidden="true">Coil</span>
+    </button>
+    <button class="side-icon-btn" id="bottom-icon-tip-jar" type="button" aria-label="StreamElements / Tip Jar">
+      <img class="support-icon-glyph" src="../DATA/BUTTOM_ICONS/tip-jar.svg" alt="Tip Jar">
+      <span class="side-icon-label" aria-hidden="true">TipJar</span>
+    </button>
+  </aside>
+
+  <div class="stream-context-menu" id="stream-context-menu">
+    <button class="context-menu-btn" data-action="send-news">Send to NEWS</button>
+    <button class="context-menu-btn" data-action="send-sport">Send to SPORT</button>
+    <button class="context-menu-btn" data-action="send-music">Send to MUSIC</button>
+    <button class="context-menu-btn" data-action="send-all">Send to ALL</button>
+    <div class="context-menu-divider"></div>
+    <button class="context-menu-btn" data-action="send-blacklist">Send to BLACKLIST</button>
+    <div class="context-menu-divider"></div>
+    <button class="context-menu-btn" data-action="close-menu">Close Menu</button>
+  </div>
+
+  <div class="container" id="video-container">
+    
+    <!-- Video 1: Al Jazeera English -->
+    <div class="video-wrapper" data-index="0">
+      <video class="hls-video" 
+             data-src="https://live-hls-web-aje.getaj.net/AJE/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 0">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 2: Al Jazeera Arabic -->
+    <div class="video-wrapper" data-index="1">
+      <video class="hls-video" 
+             data-src="https://live-hls-v3-aja.getaj.net/AJA-V3/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 1">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 3: Zagros TV -->
+    <div class="video-wrapper" data-index="2">
+      <video class="hls-video" 
+             data-src="https://5a3ed7a72ed4b.streamlock.net/zagrostv/SMIL:myStream.smil/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 2">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 4: Bloomberg TV -->
+    <div class="video-wrapper" data-index="3">
+      <video class="hls-video" 
+             data-src="https://dai.google.com/linear/hls/event/Sid4xiTQTkCT1SLu6rjUSQ/master.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 3">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 5: Balkan Web -->
+    <div class="video-wrapper" data-index="4">
+      <video class="hls-video" 
+             data-src="https://tv.balkanweb.com/news24/livestream/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 4">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 6: Syri TV -->
+    <div class="video-wrapper" data-index="5">
+      <video class="hls-video" 
+             data-src="https://stream.syritv.al/SyriTV/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 5">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 7: CBC TV -->
+    <div class="video-wrapper" data-index="6">
+      <video class="hls-video" 
+             data-src="https://stream.cbctv.az:5443/LiveApp/streams/cbctv.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 6">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 8: CBC News -->
+    <div class="video-wrapper" data-index="7">
+      <video class="hls-video" 
+             data-src="https://d7z3qjdsxbwoq.cloudfront.net/groupa/live/f9809cea-1e07-47cd-a94d-2ddd3e1351db/live.isml/.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 7">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 9: RDI -->
+    <div class="video-wrapper" data-index="8">
+      <video class="hls-video" 
+             data-src="https://rcavlive.akamaized.net/hls/live/704025/xcanrdi/master.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 8">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 10: Kan 11 -->
+    <div class="video-wrapper" data-index="9">
+      <video class="hls-video" 
+             data-src="https://kan11.media.kan.org.il/hls/live/2024514/2024514/master.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 9">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 11: i24 News -->
+    <div class="video-wrapper" data-index="10">
+      <video class="hls-video" 
+             data-src="https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 10">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 12: Dijlah -->
+    <div class="video-wrapper" data-index="11">
+      <video class="hls-video" 
+             data-src="https://ghaasiflu.online/Dijlah/tracks-v1a1/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 11">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 13: Alsharqiya -->
+    <div class="video-wrapper" data-index="12">
+      <video class="hls-video" 
+             data-src="https://5d94523502c2d.streamlock.net/alsharqiyalive/mystream/playlist.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 12">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 14: Russia 24 -->
+    <div class="video-wrapper" data-index="13">
+      <video class="hls-video" 
+             data-src="https://ruvlive.akamaized.net/out/v1/2ff7673de40f419fa5164498fae89089/index.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 13">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 15: A2D TV -->
+    <div class="video-wrapper" data-index="14">
+      <video class="hls-video" 
+             data-src="https://live.streaming.a2d.tv/asset/20025962.isml/.m3u8"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 14">
+        </div>
+      </a>
+    </div>
+
+    <!-- Video 16: Onni TV -->
+    <div class="video-wrapper" data-index="15">
+      <video class="hls-video" 
+             data-src="https://onnitv.digitacdn.net/live/ott/onnitv/playlist.m3u8?organizationId=83459409&suiteItemId=83459780"
+             controls autoplay muted playsinline></video>
+      <a href="#" target="_blank" rel="noopener noreferrer">
+        <div class="overlay-container">
+          <img class="overlay-image" src="" alt="Overlay 15">
+        </div>
+      </a>
+    </div>
+
+  </div>
+
+  <!-- About Us Page -->
+  <div class="page-content" id="about">
+    <button class="close-btn" onclick="closePage()">× Close</button>
+    <div class="page-header">
+      <h1>About LiveStream Wall</h1>
+      <p>LiveStream Wall is a free platform that aggregates publicly available live news streams from around the world, providing users with access to real-time news coverage from various international broadcasters.</p>
+      
+      <h2>Our Mission</h2>
+      <p>We believe in free access to information and transparency. Our platform curates publicly available live streams from reputable news sources, allowing you to stay informed about global events as they unfold.</p>
+      
+      <h2>Content Sources</h2>
+      <p>All video streams displayed on this website are publicly available broadcasts from official news channels. We do not host or store any video content on our servers. All streams are embedded directly from their original sources.</p>
+      
+      <h2>No Registration Required</h2>
+      <p>LiveStream Wall is completely free to use and requires no registration or personal information from users.</p>
+    </div>
+  </div>
+
+  <!-- Privacy Policy Page -->
+  <div class="page-content" id="privacy">
+    <button class="close-btn" onclick="closePage()">× Close</button>
+    <div class="page-header">
+      <h1>Privacy Policy</h1>
+      <p><strong>Last Updated: October 30, 2025</strong></p>
+      
+      <h2>1. Information We Collect</h2>
+      <p>LiveStream Wall does not directly collect, store, or process any personal information from users. We do not require registration, login, or any form of personal data submission.</p>
+      
+      <h2>2. Third-Party Services</h2>
+      <p>Our website uses the following third-party services that may collect information:</p>
+      
+      <h3>Cookies and Tracking Technologies</h3>
+      <p>Third-party providers may use cookies or similar technologies according to their own privacy policies.</p>
+      
+      <h2>3. Your Choices and Rights</h2>
+      <p>You have the following options regarding cookies:</p>
+      <ul>
+        <li>You can manage cookies through your browser settings</li>
+      </ul>
+      
+      <h2>4. GDPR Compliance (EU Users)</h2>
+      <p>If you are located in the European Economic Area (EEA), you have certain data protection rights under GDPR. Since we do not collect personal information directly, these rights primarily relate to third-party services:</p>
+      <ul>
+        <li>Right to access and rectify your data held by third parties</li>
+        <li>Right to object to processing</li>
+        <li>Right to withdraw consent for cookies</li>
+      </ul>
+      
+      <h2>5. Video Content</h2>
+      <p>All video streams are embedded from third-party sources. We do not host, store, or control these streams. Each broadcaster may have their own privacy policies and data collection practices.</p>
+      
+      <h2>6. Children's Privacy</h2>
+      <p>Our website is not directed to children under the age of 13 (or 16 in the EEA). We do not knowingly collect information from children.</p>
+      
+      <h2>7. International Data Transfers</h2>
+      <p>Third-party services may transfer and process data internationally according to their own policies.</p>
+      
+      <h2>8. Changes to This Policy</h2>
+      <p>We may update this Privacy Policy from time to time. The "Last Updated" date at the top of this page indicates when the policy was last revised.</p>
+      
+      <h2>9. Contact Information</h2>
+      <p>If you have questions about this Privacy Policy, please use our Contact page.</p>
+      
+    </div>
+  </div>
+
+  <!-- Contact Page -->
+  <div class="page-content" id="contact">
+    <button class="close-btn" onclick="closePage()">× Close</button>
+    <div class="page-header">
+      <h1>Contact Us</h1>
+      <p>We welcome your feedback, questions, and concerns about LiveStream Wall.</p>
+      
+      <h2>General Inquiries</h2>
+      <p>For general questions about our service, please note that we are a free, publicly available platform that aggregates news streams.</p>
+      
+      <h2>Privacy Concerns</h2>
+      <p>If you have questions about our Privacy Policy or data practices, please review our Privacy Policy page first. For specific concerns, you can contact us through the following methods:</p>
+      
+      <h2>Technical Issues</h2>
+      <p>If you experience technical problems with video streams:</p>
+      <ul>
+        <li>Ensure you have a stable internet connection</li>
+        <li>Try refreshing the page</li>
+        <li>Clear your browser cache and cookies</li>
+        <li>Try a different browser</li>
+      </ul>
+      <p>Please note: We do not control the availability or quality of third-party streams. If a specific channel is not working, the issue is likely on the broadcaster's end.</p>
+      
+      <h2>Content Removal Requests</h2>
+      <p>All video content is embedded from official, publicly available sources. We do not host any content on our servers. If you believe any content violates your rights, please contact the original broadcaster directly.</p>
+      
+      <h2>Response Time</h2>
+      <p>We strive to respond to all legitimate inquiries within 5-7 business days.</p>
+    </div>
+  </div>
+
+  <script>
+    // Page navigation functions
+    function showPage(pageId) {
+      document.querySelectorAll('.page-content').forEach(page => {
+        page.classList.remove('active');
+      });
+      document.getElementById(pageId).classList.add('active');
+      const footer = document.getElementById('footer');
+      if (footer) footer.classList.add('hidden');
+      document.body.style.overflow = 'hidden';
+    }
+
+    function closePage() {
+      document.querySelectorAll('.page-content').forEach(page => {
+        page.classList.remove('active');
+      });
+      const footer = document.getElementById('footer');
+      if (footer) footer.classList.remove('hidden');
+      document.body.style.overflow = 'auto';
+    }
+
+    function clearCountryFilterButtons() {
+      const leftPanel = document.getElementById('left-icon-panel');
+      if (!leftPanel) return;
+      leftPanel.querySelectorAll('.side-icon-btn').forEach((btn) => btn.classList.remove('active'));
+    }
+
+    function clearMainCategoryButtons() {
+      [
+        'side-icon-news', 'side-icon-sport', 'side-icon-music', 'side-icon-all'
+      ].forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.remove('active');
+      });
+    }
+
+    function setActiveMainCategory(category) {
+      clearMainCategoryButtons();
+      const idsByCategory = {
+        news: ['side-icon-news'],
+        sport: ['side-icon-sport'],
+        music: ['side-icon-music'],
+        all: ['side-icon-all']
+      };
+      (idsByCategory[category] || []).forEach((id) => {
+        const btn = document.getElementById(id);
+        if (btn) btn.classList.add('active');
+      });
+      clearCountryFilterButtons();
+    }
+
+    function initializeSideIconPanel() {
+      const panel = document.getElementById('side-icon-panel');
+      const edgeTrigger = document.getElementById('side-panel-edge-trigger');
+      const newsButton = document.getElementById('side-icon-news');
+      const sportButton = document.getElementById('side-icon-sport');
+      const musicButton = document.getElementById('side-icon-music');
+      const allButton = document.getElementById('side-icon-all');
+      if (!panel || !edgeTrigger) return;
+
+      const showPanel = () => panel.classList.add('visible');
+      const hidePanel = () => panel.classList.remove('visible');
+
+      edgeTrigger.addEventListener('mouseenter', showPanel);
+      edgeTrigger.addEventListener('mouseleave', (e) => {
+        if (!panel.contains(e.relatedTarget)) hidePanel();
+      });
+      panel.addEventListener('mouseleave', (e) => {
+        if (!edgeTrigger.contains(e.relatedTarget)) hidePanel();
+      });
+
+      if (newsButton) {
+        newsButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          setActiveMainCategory('news');
+          initializeVideos(NEWS_STREAMS_SOURCE_URL);
+        });
+      }
+
+      if (sportButton) {
+        sportButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          setActiveMainCategory('sport');
+          initializeVideos(SPORT_STREAMS_SOURCE_URL);
+        });
+      }
+
+      if (musicButton) {
+        musicButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          setActiveMainCategory('music');
+          initializeVideos(MUSIC_STREAMS_SOURCE_URL);
+        });
+      }
+
+      if (allButton) {
+        allButton.addEventListener('click', (e) => {
+          e.preventDefault();
+          setActiveMainCategory('all');
+          initializeVideos(ALL_STREAMS_SOURCE_URL);
+        });
+      }
+    }
+
+    function initializeContextMenu() {
+      const menu = document.getElementById('stream-context-menu');
+      if (!menu) return;
+      let contextStreamSrc = null;
+      let contextWrapper = null;
+
+      function showMenu(x, y, src, wrapper) {
+        contextStreamSrc = src;
+        contextWrapper = wrapper;
+        menu.style.left = x + 'px';
+        menu.style.top = y + 'px';
+        menu.classList.add('visible');
+        const rect = menu.getBoundingClientRect();
+        if (rect.right > window.innerWidth) {
+          menu.style.left = (x - rect.width) + 'px';
+        }
+        if (rect.bottom > window.innerHeight) {
+          menu.style.top = (y - rect.height) + 'px';
+        }
+      }
+
+      function hideMenu() {
+        menu.classList.remove('visible');
+        contextStreamSrc = null;
+        contextWrapper = null;
+      }
+
+      document.addEventListener('contextmenu', (e) => {
+        const wrapper = e.target.closest('.video-wrapper');
+        if (!wrapper) return;
+        e.preventDefault();
+        e.stopPropagation();
+        e.stopImmediatePropagation();
+        const video = wrapper.querySelector('video');
+        const src = video ? (video.getAttribute('data-src') || video.src) : '';
+        showMenu(e.clientX, e.clientY, src, wrapper);
+      }, true);
+
+      document.addEventListener('mousedown', (e) => {
+        if (!menu.contains(e.target)) hideMenu();
+      }, true);
+
+      document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') hideMenu();
+      });
+
+      const actionToTarget = {
+        'send-music': 'music',
+        'send-news': 'news',
+        'send-sport': 'sport',
+        'send-all': 'all',
+        'send-blacklist': 'blacklist',
+      };
+
+      menu.querySelectorAll('.context-menu-btn').forEach((btn) => {
+        btn.addEventListener('click', () => {
+          const action = btn.getAttribute('data-action');
+          if (action === 'close-menu') {
+            hideMenu();
+            return;
+          }
+          const target = actionToTarget[action];
+          if (target && contextStreamSrc) {
+            const movedWrapper = contextWrapper;
+            const movedSrc = contextStreamSrc;
+            fetch('/api/send-to-list', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ url: movedSrc, target: target, source: currentStreamsSourceUrl }),
+            })
+            .then(r => r.json())
+            .then(data => {
+              if (data.ok && movedWrapper) {
+                const state = streamStates.find(s => s.wrapper === movedWrapper);
+                if (state) hideBrokenStream(state, 'moved to ' + target);
+              }
+            })
+            .catch(err => console.error('Send failed:', err));
+          }
+          hideMenu();
+        });
+      });
+    }
+
+    function initializeBottomIconPanel() {
+      const panel = document.getElementById('bottom-icon-panel');
+      const edgeTrigger = document.getElementById('bottom-panel-edge-trigger');
+      if (!panel || !edgeTrigger) return;
+
+      const showPanel = () => panel.classList.add('visible');
+      const hidePanel = () => panel.classList.remove('visible');
+
+      edgeTrigger.addEventListener('mouseenter', showPanel);
+      edgeTrigger.addEventListener('mouseleave', (e) => {
+        if (!panel.contains(e.relatedTarget)) hidePanel();
+      });
+      panel.addEventListener('mouseleave', (e) => {
+        if (!edgeTrigger.contains(e.relatedTarget)) hidePanel();
+      });
+      panel.addEventListener('wheel', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        if (Math.abs(e.deltaY) > Math.abs(e.deltaX)) {
+          panel.scrollLeft += e.deltaY;
+        } else {
+          panel.scrollLeft += e.deltaX;
+        }
+      }, { passive: false });
+    }
+
+    function initializeLeftIconPanel() {
+      const panel = document.getElementById('left-icon-panel');
+      const edgeTrigger = document.getElementById('left-panel-edge-trigger');
+      if (!panel || !edgeTrigger) return;
+
+      const showPanel = () => panel.classList.add('visible');
+      const hidePanel = () => panel.classList.remove('visible');
+
+      edgeTrigger.addEventListener('mouseenter', showPanel);
+      edgeTrigger.addEventListener('mouseleave', (e) => {
+        if (!panel.contains(e.relatedTarget)) hidePanel();
+      });
+      panel.addEventListener('mouseleave', (e) => {
+        if (!edgeTrigger.contains(e.relatedTarget)) hidePanel();
+      });
+      panel.addEventListener('wheel', (e) => {
+        e.stopPropagation();
+        const atTop = panel.scrollTop === 0;
+        const atBottom = panel.scrollTop + panel.clientHeight >= panel.scrollHeight - 1;
+        const goingUp = e.deltaY < 0;
+        const goingDown = e.deltaY > 0;
+        if ((atTop && goingUp) || (atBottom && goingDown)) {
+          e.preventDefault();
+        }
+      }, { passive: false });
+    }
+
+    function initializeTopIconPanel() {
+      const panel = document.getElementById('top-icon-panel');
+      const edgeTrigger = document.getElementById('top-panel-edge-trigger');
+      const leftButton = document.getElementById('top-icon-left');
+      const rightButton = document.getElementById('top-icon-right');
+      const valueElement = document.getElementById('top-icon-value');
+      if (!panel || !edgeTrigger || !leftButton || !rightButton || !valueElement) return;
+
+      const showPanel = () => panel.classList.add('visible');
+      const hidePanel = () => panel.classList.remove('visible');
+
+      edgeTrigger.addEventListener('mouseenter', showPanel);
+      edgeTrigger.addEventListener('mouseleave', (e) => {
+        if (!panel.contains(e.relatedTarget)) hidePanel();
+      });
+      panel.addEventListener('mouseleave', (e) => {
+        if (!edgeTrigger.contains(e.relatedTarget)) hidePanel();
+      });
+
+      valueElement.textContent = String(getCurrentSlotsCount());
+      updateTopPanelControlsState();
+
+      leftButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentSlotsIndex > 0) {
+          currentSlotsIndex -= 1;
+          valueElement.textContent = String(getCurrentSlotsCount());
+          updateTopPanelControlsState();
+          initializeVideos(currentStreamsSourceUrl);
+        }
+      });
+
+      rightButton.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (currentSlotsIndex < SLOTS_PER_SCREEN_OPTIONS.length - 1) {
+          currentSlotsIndex += 1;
+          valueElement.textContent = String(getCurrentSlotsCount());
+          updateTopPanelControlsState();
+          initializeVideos(currentStreamsSourceUrl);
+        }
+      });
+    }
+
+    const COUNTRY_TO_ISO2 = {
+      'albania': 'AL',
+      'andorra': 'AD',
+      'argentina': 'AR',
+      'armenia': 'AM',
+      'australia': 'AU',
+      'austria': 'AT',
+      'azerbaijan': 'AZ',
+      'belarus': 'BY',
+      'belgium': 'BE',
+      'bosnia and herzegovina': 'BA',
+      'brazil': 'BR',
+      'bulgaria': 'BG',
+      'canada': 'CA',
+      'chad': 'TD',
+      'chile': 'CL',
+      'china': 'CN',
+      'costa rica': 'CR',
+      'croatia': 'HR',
+      'cyprus': 'CY',
+      'czech republic': 'CZ',
+      'denmark': 'DK',
+      'dominican republic': 'DO',
+      'egypt': 'EG',
+      'estonia': 'EE',
+      'faroe islands': 'FO',
+      'finland': 'FI',
+      'france': 'FR',
+      'georgia': 'GE',
+      'germany': 'DE',
+      'greece': 'GR',
+      'greenland': 'GL',
+      'hong kong': 'HK',
+      'hungary': 'HU',
+      'iceland': 'IS',
+      'india': 'IN',
+      'indonesia': 'ID',
+      'iran': 'IR',
+      'iraq': 'IQ',
+      'ireland': 'IE',
+      'israel': 'IL',
+      'italy': 'IT',
+      'japan': 'JP',
+      'korea': 'KR',
+      'kosovo': 'XK',
+      'latvia': 'LV',
+      'lithuania': 'LT',
+      'luxembourg': 'LU',
+      'macau': 'MO',
+      'malta': 'MT',
+      'mexico': 'MX',
+      'moldova': 'MD',
+      'monaco': 'MC',
+      'montenegro': 'ME',
+      'netherlands': 'NL',
+      'north korea': 'KP',
+      'north macedonia': 'MK',
+      'norway': 'NO',
+      'paraguay': 'PY',
+      'peru': 'PE',
+      'poland': 'PL',
+      'portugal': 'PT',
+      'qatar': 'QA',
+      'romania': 'RO',
+      'russia': 'RU',
+      'san marino': 'SM',
+      'saudi arabia': 'SA',
+      'serbia': 'RS',
+      'slovakia': 'SK',
+      'slovenia': 'SI',
+      'somalia': 'SO',
+      'spain': 'ES',
+      'sweden': 'SE',
+      'switzerland': 'CH',
+      'taiwan': 'TW',
+      'trinidad': 'TT',
+      'turkey': 'TR',
+      'uk': 'GB',
+      'ukraine': 'UA',
+      'united arab emirates': 'AE',
+      'usa': 'US',
+      'venezuela': 'VE'
+    };
+
+    function countryToIso2(countryName) {
+      if (!countryName || typeof countryName !== 'string') return null;
+      return COUNTRY_TO_ISO2[countryName.trim().toLowerCase()] || null;
+    }
+
+    function iso2ToFlagEmoji(iso2) {
+      if (!iso2 || typeof iso2 !== 'string' || iso2.length !== 2) return '??';
+      const upper = iso2.toUpperCase();
+      const first = upper.charCodeAt(0) - 65 + 127462;
+      const second = upper.charCodeAt(1) - 65 + 127462;
+      return String.fromCodePoint(first, second);
+    }
+
+    function createCountryFlagButton(countryName, onSelectCountry) {
+      const button = document.createElement('button');
+      button.className = 'side-icon-btn';
+      button.type = 'button';
+      button.ariaLabel = countryName;
+      button.title = countryName;
+      button.id = `left-icon-${countryName.toLowerCase().replace(/[^a-z0-9]+/g, '-')}`;
+
+      const iso2 = countryToIso2(countryName);
+      if (iso2) {
+        const flagImg = document.createElement('img');
+        flagImg.className = 'country-flag-image';
+        flagImg.alt = '';
+        flagImg.loading = 'lazy';
+        flagImg.decoding = 'async';
+        flagImg.src = `https://flagcdn.com/w40/${iso2.toLowerCase()}.png`;
+        flagImg.addEventListener('error', () => {
+          if (flagImg.parentNode === button) {
+            button.removeChild(flagImg);
+          }
+        });
+        button.appendChild(flagImg);
+      }
+
+      button.addEventListener('click', (e) => {
+        e.preventDefault();
+        if (typeof onSelectCountry === 'function') {
+          onSelectCountry(countryName, button);
+        }
+      });
+
+      return button;
+    }
+
+    function countryStreamsSourceUrl(countryName) {
+      return `/DATA/WORLD/${encodeURIComponent(countryName)}.json`;
+    }
+
+    function loadWorldCountries() {
+      return fetch('/DATA/WORLD.json')
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(items => Array.isArray(items) ? items : [])
+        .then(items => items.filter(item => typeof item === 'string' && item.trim().length > 0))
+        .catch(err => {
+          console.error('Failed to load world countries:', err);
+          return [];
+        });
+    }
+
+    async function initializeCountryFlagsPanel() {
+      const panel = document.getElementById('left-icon-panel');
+      if (!panel) return;
+
+      const countries = await loadWorldCountries();
+      panel.innerHTML = '';
+
+      const setActiveCountryButton = (targetButton) => {
+        panel.querySelectorAll('.side-icon-btn').forEach((btn) => {
+          btn.classList.toggle('active', btn === targetButton);
+        });
+      };
+      const onSelectCountry = (countryName, button) => {
+        setActiveCountryButton(button);
+        clearMainCategoryButtons();
+        initializeVideos(countryStreamsSourceUrl(countryName));
+      };
+
+      countries.forEach(countryName => {
+        panel.appendChild(createCountryFlagButton(countryName, onSelectCountry));
+      });
+    }
+
+    // Video and overlay management
+    let overlayContainers = [];
+    let streamStates = [];
+    let overlayData = [];
+    let lastWrapperFs = null;
+    let overlayTimeout = null;
+    const FRONTEND_STREAMS_COUNT = Number("__FRONTEND_STREAMS_COUNT__");
+    const NEWS_STREAMS_SOURCE_URL = "/DATA/LISTS/NEWS.json";
+    const SPORT_STREAMS_SOURCE_URL = "/DATA/LISTS/SPORT.json";
+    const MUSIC_STREAMS_SOURCE_URL = "/DATA/LISTS/MUSIC.json";
+    const ALL_STREAMS_SOURCE_URL = "/DATA/LISTS/ALL.json";
+    const PROMO_DISPLAY_SECONDS = Number("__FRONTEND_PROMO_DISPLAY_SECONDS__");
+    const DEV_MODE = "__FRONTEND_DEV_MODE__" === "true";
+    const SLOTS_PER_SCREEN_OPTIONS = [1, 4, 9, 16];
+    let currentSlotsIndex = 1;
+    let currentStreamsSourceUrl = NEWS_STREAMS_SOURCE_URL;
+
+    function getCurrentSlotsCount() {
+      return SLOTS_PER_SCREEN_OPTIONS[currentSlotsIndex] || 4;
+    }
+
+    function updateTopPanelControlsState() {
+      const leftButton = document.getElementById('top-icon-left');
+      const rightButton = document.getElementById('top-icon-right');
+      if (!leftButton || !rightButton) return;
+      leftButton.disabled = currentSlotsIndex <= 0;
+      rightButton.disabled = currentSlotsIndex >= SLOTS_PER_SCREEN_OPTIONS.length - 1;
+    }
+
+    function enterSiteFullscreen() {
+      const el = document.documentElement;
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    }
+
+    let redistributeTimer = null;
+
+    function hideBrokenStream(state, reason) {
+      const video = state?.video;
+      const wrapper = state?.wrapper;
+      console.warn('Stream disabled:', reason, state?.src);
+      stopVideoStream(state);
+      state.broken = true;
+      if (wrapper && wrapper.parentNode) {
+        wrapper.parentNode.removeChild(wrapper);
+      }
+      streamStates = streamStates.filter(s => s !== state);
+      overlayContainers = overlayContainers.filter(o => o.wrapper !== wrapper);
+
+      clearTimeout(redistributeTimer);
+      redistributeTimer = setTimeout(redistributePages, 300);
+    }
+
+    function startVideoStream(state) {
+      if (!state || state.broken || state.active || !state.src) return;
+      const video = state.video;
+      const src = state.src;
+      video.defaultMuted = true;
+      video.muted = true;
+
+      if (window.Hls && Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: false,
+          backBufferLength: 15,
+          maxBufferLength: 10,
+          maxMaxBufferLength: 30,
+          maxBufferSize: 30 * 1000 * 1000,
+          manifestLoadingMaxRetry: 3,
+          levelLoadingMaxRetry: 3,
+          fragLoadingMaxRetry: 3,
+          manifestLoadingTimeOut: 8000,
+          levelLoadingTimeOut: 8000,
+          fragLoadingTimeOut: 8000,
+        });
+        state.hls = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.ERROR, (_, data) => {
+          if (data && data.fatal) {
+            hideBrokenStream(state, data.details || 'fatal hls error');
+          }
+        });
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        if (!state.nativeErrorBound) {
+          video.addEventListener('error', () => hideBrokenStream(state, 'native video error'));
+          state.nativeErrorBound = true;
+        }
+        video.src = src;
+        video.load();
+        video.play().catch(() => {});
+      } else {
+        hideBrokenStream(state, 'HLS is not supported in this browser');
+        return;
+      }
+      state.active = true;
+    }
+
+    function stopVideoStream(state) {
+      if (!state || !state.active) return;
+      const video = state.video;
+
+      if (state.hls) {
+        state.hls.destroy();
+        state.hls = null;
+      }
+
+      video.pause();
+      video.muted = true;
+      video.removeAttribute('src');
+      video.load();
+      state.active = false;
+    }
+
+    function loadOverlayData() {
+      return fetch('../DATA/ACTIVE_PROMOS_LIST.json')
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(items => Array.isArray(items) ? items : [])
+        .then(items => items.filter(item => item && item.fileName && item.promoUrl))
+        .then(data => overlayData = data)
+        .catch(err => console.error('Failed to load overlay data:', err));
+    }
+
+    function loadStreamsList(sourceUrl) {
+      return fetch(sourceUrl)
+        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
+        .then(items => Array.isArray(items) ? items : [])
+        .then(items => items.filter(item => typeof item === 'string' && item.startsWith('http')))
+        .catch(err => {
+          console.error('Failed to load streams list:', sourceUrl, err);
+          return [];
+        });
+    }
+
+    function createVideoWrapper(src, idx) {
+      const wrapper = document.createElement('div');
+      wrapper.className = 'video-wrapper';
+      wrapper.setAttribute('data-index', String(idx));
+
+      const video = document.createElement('video');
+      video.className = 'hls-video';
+      video.setAttribute('data-src', src);
+      video.setAttribute('controls', '');
+      video.setAttribute('muted', '');
+      video.setAttribute('playsinline', '');
+      video.setAttribute('preload', 'none');
+      video.defaultMuted = true;
+      video.muted = true;
+
+      const link = document.createElement('a');
+      link.href = '#';
+      link.target = '_blank';
+      link.rel = 'noopener noreferrer';
+
+      const containerDiv = document.createElement('div');
+      containerDiv.className = 'overlay-container';
+
+      const img = document.createElement('img');
+      img.className = 'overlay-image';
+      img.src = '';
+      img.alt = `Overlay ${idx}`;
+
+      containerDiv.appendChild(img);
+      link.appendChild(containerDiv);
+      wrapper.appendChild(video);
+      wrapper.appendChild(link);
+
+      return { wrapper, video, link, containerDiv, img, src };
+    }
+
+    function redistributePages() {
+      const container = document.getElementById('video-container');
+      if (!container) return;
+      const slotsPerScreen = getCurrentSlotsCount();
+      const wrappers = Array.from(container.querySelectorAll('.video-wrapper'));
+
+      container.querySelectorAll('.stream-page').forEach(p => p.remove());
+
+      let currentPage = null;
+      wrappers.forEach((wrapper, idx) => {
+        if (idx % slotsPerScreen === 0) {
+          currentPage = document.createElement('div');
+          currentPage.className = 'stream-page';
+          container.appendChild(currentPage);
+        }
+        currentPage.appendChild(wrapper);
+      });
+
+      applyGridLayout(slotsPerScreen);
+      updateActiveStreams();
+    }
+
+    function applyGridLayout(visibleCount) {
+      const count = Math.max(1, visibleCount);
+      const columns = Math.ceil(Math.sqrt(count));
+      const rows = Math.ceil(count / columns);
+
+      document.querySelectorAll('.stream-page').forEach(page => {
+        page.style.gridTemplateColumns = `repeat(${columns}, 1fr)`;
+        page.style.gridTemplateRows = `repeat(${rows}, 1fr)`;
+      });
+    }
+
+    function updateActiveStreams() {
+      const pages = document.querySelectorAll('.stream-page');
+      const slotsPerScreen = getCurrentSlotsCount();
+      const prefetchRange = slotsPerScreen <= 4 ? 1 : 0;
+
+      pages.forEach((page, pageIndex) => {
+        const shouldBeActive = Math.abs(pageIndex - snapCurrentPage) <= prefetchRange;
+        const startIdx = pageIndex * slotsPerScreen;
+        const endIdx = Math.min(startIdx + slotsPerScreen, streamStates.length);
+
+        for (let i = startIdx; i < endIdx; i++) {
+          const state = streamStates[i];
+          if (shouldBeActive) startVideoStream(state);
+          else stopVideoStream(state);
+        }
+      });
+    }
+
+    async function initializeVideos(sourceUrl) {
+      const container = document.getElementById('video-container');
+      if (!container) return;
+      if (typeof sourceUrl === 'string' && sourceUrl.length > 0) {
+        currentStreamsSourceUrl = sourceUrl;
+      }
+
+      const slotsPerScreen = getCurrentSlotsCount();
+
+      const streamUrls = await loadStreamsList(currentStreamsSourceUrl);
+      streamStates = [];
+      overlayContainers = [];
+      while (container.firstChild) container.removeChild(container.firstChild);
+
+      window.scrollTo({ top: 0, behavior: 'instant' });
+      snapCurrentPage = 0;
+
+      let currentPage = null;
+
+      streamUrls.forEach((src, idx) => {
+        if (idx % slotsPerScreen === 0) {
+          currentPage = document.createElement('div');
+          currentPage.className = 'stream-page';
+          container.appendChild(currentPage);
+        }
+
+        const item = createVideoWrapper(src, idx);
+        const { wrapper, video, link, containerDiv, img } = item;
+        currentPage.appendChild(wrapper);
+
+        const state = {
+          wrapper,
+          video,
+          src,
+          hls: null,
+          active: false,
+          broken: false,
+          nativeErrorBound: false
+        };
+        streamStates.push(state);
+
+        overlayContainers.push({ wrapper, link, containerDiv, img, video });
+
+        img.addEventListener('error', () => console.error('Overlay load failed:', img.src));
+
+        wrapper.addEventListener('click', e => {
+          if (e.target.closest('a')) return;
+          e.preventDefault();
+          e.stopPropagation();
+
+          const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
+                       document.mozFullScreenElement || document.msFullscreenElement;
+          const isFs = (fsEl === wrapper);
+
+          if (!isFs) {
+            startVideoStream(state);
+            overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
+            lastWrapperFs = wrapper;
+
+            if (wrapper.requestFullscreen) wrapper.requestFullscreen();
+            else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
+            else if (wrapper.mozRequestFullScreen) wrapper.mozRequestFullScreen();
+            else if (wrapper.msRequestFullscreen) wrapper.msRequestFullscreen();
+
+            video.muted = false;
+          } else {
+            if (document.exitFullscreen) document.exitFullscreen();
+            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+            else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+            else if (document.msExitFullscreen) document.msExitFullscreen();
+          }
+        });
+      });
+
+      applyGridLayout(slotsPerScreen);
+      updateActiveStreams();
+    }
+
+    function onVideoExitFullscreen() {
+      const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
+                   document.mozFullScreenElement || document.msFullscreenElement;
+      
+      if (lastWrapperFs && fsEl !== lastWrapperFs) {
+        const exitedVideo = overlayContainers.find(o => 
+          o.containerDiv.closest('div.video-wrapper') === lastWrapperFs
+        )?.video;
+        
+        if (exitedVideo) exitedVideo.muted = true;
+        
+        enterSiteFullscreen();
+        
+        if (overlayTimeout) clearTimeout(overlayTimeout);
+        
+        if (!overlayData.length) {
+          console.error('Overlay data empty');
+        } else {
+          overlayContainers.forEach((o, i) => {
+            const data = overlayData[i % overlayData.length];
+            o.img.src = `../DATA/PROMOS/${data.fileName}`;
+            o.link.href = data.promoUrl;
+            
+            if (o.containerDiv !== lastWrapperFs.querySelector('.overlay-container')) {
+              o.containerDiv.style.display = 'block';
+            }
+          });
+          
+          if (Number.isFinite(PROMO_DISPLAY_SECONDS) && PROMO_DISPLAY_SECONDS >= 0) {
+            overlayTimeout = setTimeout(() => {
+              overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
+            }, PROMO_DISPLAY_SECONDS * 1000);
+          } else {
+            console.error('Invalid FRONTEND_PROMO_DISPLAY_SECONDS from SETTINGS.py');
+          }
+        }
+        
+        lastWrapperFs = null;
+      }
+    }
+
+    document.addEventListener('fullscreenchange', onVideoExitFullscreen);
+    document.addEventListener('webkitfullscreenchange', onVideoExitFullscreen);
+    document.addEventListener('mozfullscreenchange', onVideoExitFullscreen);
+    document.addEventListener('MSFullscreenChange', onVideoExitFullscreen);
+
+    // Snap-скролл по страницам
+    const SNAP_DURATION_MS = Number("__FRONTEND_SNAP_SCROLL_SECONDS__") * 1000;
+    let snapCurrentPage = 0;
+    let snapAnimating = false;
+    let snapTouchStartY = 0;
+    let snapRafId = null;
+
+    function getSnapPageCount() {
+      return document.querySelectorAll('.stream-page').length;
+    }
+
+    function closeAllPanels() {
+      document.querySelectorAll('.side-icon-panel.visible, .top-icon-panel.visible, .bottom-icon-panel.visible')
+        .forEach(p => p.classList.remove('visible'));
+    }
+
+    function snapTo(pageIndex) {
+      const total = getSnapPageCount();
+      if (total === 0) return;
+      const target = Math.max(0, Math.min(pageIndex, total - 1));
+      if (target === snapCurrentPage && !snapAnimating) return;
+      if (snapRafId) { cancelAnimationFrame(snapRafId); snapRafId = null; }
+      closeAllPanels();
+      snapCurrentPage = target;
+      snapAnimating = true;
+
+      const startY = window.scrollY;
+      const endY = target * window.innerHeight;
+      const distance = endY - startY;
+      if (distance === 0) { snapAnimating = false; updateActiveStreams(); return; }
+
+      let startTime = null;
+      function step(timestamp) {
+        if (!startTime) startTime = timestamp;
+        const elapsed = timestamp - startTime;
+        const progress = Math.min(elapsed / SNAP_DURATION_MS, 1);
+        const ease = progress < 0.5
+          ? 4 * progress * progress * progress
+          : 1 - Math.pow(-2 * progress + 2, 3) / 2;
+        window.scrollTo(0, startY + distance * ease);
+        if (progress < 1) snapRafId = requestAnimationFrame(step);
+        else { snapRafId = null; snapAnimating = false; updateActiveStreams(); }
+      }
+      snapRafId = requestAnimationFrame(step);
+    }
+
+    document.addEventListener('wheel', e => {
+      if (e.target.closest('.bottom-icon-panel, .side-icon-panel')) return;
+      e.preventDefault();
+      if (snapAnimating) return;
+      if (e.deltaY > 0) snapTo(snapCurrentPage + 1);
+      else if (e.deltaY < 0) snapTo(snapCurrentPage - 1);
+    }, { passive: false });
+
+    document.addEventListener('touchstart', e => {
+      snapTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    document.addEventListener('touchend', e => {
+      if (snapAnimating) return;
+      const diff = snapTouchStartY - e.changedTouches[0].clientY;
+      if (Math.abs(diff) > 50) {
+        if (diff > 0) snapTo(snapCurrentPage + 1);
+        else snapTo(snapCurrentPage - 1);
+      }
+    }, { passive: true });
+
+    document.addEventListener('keydown', e => {
+      if (snapAnimating) return;
+      if (e.key === 'ArrowDown' || e.key === 'PageDown') {
+        e.preventDefault(); snapTo(snapCurrentPage + 1);
+      } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
+        e.preventDefault(); snapTo(snapCurrentPage - 1);
+      }
+    });
+
+    // Инициализация
+    initializeTopIconPanel();
+    initializeSideIconPanel();
+    initializeBottomIconPanel();
+    if (DEV_MODE) initializeContextMenu();
+    initializeLeftIconPanel();
+    initializeCountryFlagsPanel();
+    loadOverlayData().then(() => {
+      initializeVideos(NEWS_STREAMS_SOURCE_URL);
+    }).catch(err => console.error('Init error:', err));
+  </script>
+</body>
+</html>

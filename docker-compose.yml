@@ -1,0 +1,13 @@
+services:
+  app:
+    build: .
+    container_name: livestream-tv-wall
+    restart: unless-stopped
+    ports:
+      - "80:8000"
+    volumes:
+      - ./DATA:/app/DATA
+    environment:
+      - PYTHONUNBUFFERED=1
+      - APP_HOST=0.0.0.0
+      - DEV_MODE=0

@@ -1,0 +1,23 @@
+[
+  "http://88.212.15.19/live/test_ct1_25p/playlist.m3u8",
+  "http://88.212.15.19/live/test_minimax/playlist.m3u8",
+  "http://88.212.15.19/live/test_ctsport_25p/playlist.m3u8",
+  "http://88.212.15.19/live/test_ct24_hevc/playlist.m3u8",
+  "https://rtmp.elektrika.cz/live/myStream.sdp/playlist.m3u8",
+  "https://stream.mediawork.cz/retrotv/retrotvHQ1/playlist.m3u8",
+  "http://88.212.15.19/live/ct_art_avc_25p/playlist.m3u8",
+  "https://ocko-live.ssl.cdn.cra.cz/channels/ocko_expres/playlist.m3u8",
+  "https://ocko-live-dash.ssl.cdn.cra.cz/cra_live2/ocko.stream.1.smil/playlist.m3u8",
+  "https://vysilani.zaktv.cz/broadcast/hls/jtv/index.m3u8",
+  "https://vysilani.zaktv.cz/broadcast/hls/ptv/index.m3u8",
+  "http://88.212.15.19/live/prima_love_avc_25p/playlist.m3u8",
+  "https://stream.jc1.cz/hls/jc1.m3u8",
+  "http://88.212.15.19/live/prima_avc_25p/playlist.m3u8",
+  "https://streamer05.low-latency.cz/oiktv/index.m3u8",
+  "http://88.212.15.19/live/test_ct2_25p/playlist.m3u8",
+  "https://stream.polar.cz/polar2/polarlive2-1/playlist.m3u8",
+  "https://stream.polar.cz/vctv/vctvlive-1/playlist.m3u8",
+  "https://stream.polar.cz/polar/polarlive-1/playlist.m3u8",
+  "https://vysilani.zaktv.cz/broadcast/hls/utv/index.m3u8",
+  "https://stream.polar.cz/tvbrno1/tvbrno1live-1/playlist.m3u8"
+]
