@@ -40,7 +40,7 @@ python run.py
 
 # UPDATE
 git add .
-git commit -m "v0.0.23 - starting docker on server"
+git commit -m "v0.0.24 - fixing port issue"
 git push
 
 # DEV LOG
@@ -50,3 +50,4 @@ v0.0.20 - fix html for ads aprooving stage
 v0.0.21 - add google ads
 v0.0.22 - added API request handling
 v0.0.23 - starting docker on server
+v0.0.24 - fixing port issue
