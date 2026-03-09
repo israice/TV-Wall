@@ -40,7 +40,7 @@ python run.py
 
 # UPDATE
 git add .
-git commit -m "v0.0.26 - added better dev mode"
+git commit -m "v0.0.27 - lists updated"
 git push
 python run.py
 
@@ -54,3 +54,4 @@ v0.0.23 - starting docker on server
 v0.0.24 - fixing port issue
 v0.0.25 - demo link updated in README.md
 v0.0.26 - added better dev mode
+v0.0.27 - lists updated

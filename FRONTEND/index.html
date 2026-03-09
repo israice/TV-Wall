@@ -38,6 +38,7 @@
       display: grid;
       width: 100%;
       height: 100vh;
+      height: 100dvh;
       overflow: hidden;
     }
     
@@ -253,6 +254,14 @@
       background: rgba(255, 255, 255, 0.2);
       border-color: rgba(255, 255, 255, 0.65);
     }
+    .side-icon-btn.dev-only {
+      border-color: rgba(255, 165, 0, 0.5);
+      color: rgba(255, 165, 0, 0.85);
+    }
+    .side-icon-btn.dev-only.active {
+      background: rgba(255, 165, 0, 0.15);
+      border-color: rgba(255, 165, 0, 0.8);
+    }
 
     .side-icon-btn svg {
       width: 24px;
@@ -440,7 +449,7 @@
 
     .stream-context-menu {
       position: fixed;
-      display: none;
+      display: flex;
       flex-direction: column;
       padding: 6px 0;
       background: rgba(22, 22, 22, 0.95);
@@ -449,14 +458,17 @@
       z-index: 10100;
       min-width: 180px;
       opacity: 0;
+      pointer-events: none;
+      visibility: hidden;
       transition: opacity 0.15s ease;
       backdrop-filter: blur(12px);
       -webkit-backdrop-filter: blur(12px);
       box-shadow: 0 8px 32px rgba(0, 0, 0, 0.5);
     }
     .stream-context-menu.visible {
-      display: flex;
       opacity: 1;
+      pointer-events: auto;
+      visibility: visible;
     }
     .context-menu-btn {
       display: block;
@@ -554,7 +566,7 @@
       </svg>
       <span class="side-icon-label" aria-hidden="true">MUSIC</span>
     </button>
-    <button class="side-icon-btn" id="side-icon-all" type="button" aria-label="All streams">
+    <button class="side-icon-btn dev-only" id="side-icon-all" type="button" aria-label="All streams" style="display:none">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <circle cx="12" cy="12" r="8"></circle>
         <path d="M4 12h16"></path>
@@ -937,6 +949,9 @@
       if (DEV_MODE && news3Button) {
         news3Button.style.display = '';
       }
+      if (DEV_MODE && allButton) {
+        allButton.style.display = '';
+      }
 
       const showPanel = () => panel.classList.add('visible');
       const hidePanel = () => panel.classList.remove('visible');
@@ -1098,16 +1113,19 @@
       function showMenu(x, y, src, wrapper) {
         contextStreamSrc = src;
         contextWrapper = wrapper;
-        menu.style.left = x + 'px';
-        menu.style.top = y + 'px';
+        // Measure off-screen first (menu is display:flex but visibility:hidden)
+        menu.style.left = '-9999px';
+        menu.style.top = '-9999px';
         menu.classList.add('visible');
         const rect = menu.getBoundingClientRect();
-        if (rect.right > window.innerWidth) {
-          menu.style.left = (x - rect.width) + 'px';
-        }
-        if (rect.bottom > window.innerHeight) {
-          menu.style.top = (y - rect.height) + 'px';
-        }
+        const menuW = rect.width;
+        const menuH = rect.height;
+        const vw = window.innerWidth;
+        const vh = window.innerHeight;
+        const finalX = Math.max(0, Math.min(x, vw - menuW));
+        const finalY = Math.max(0, Math.min(y, vh - menuH));
+        menu.style.left = finalX + 'px';
+        menu.style.top = finalY + 'px';
       }
 
       function hideMenu() {
@@ -1511,7 +1529,8 @@
         hls.attachMedia(video);
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           video.muted = true;
-          video.play().catch(e => console.warn('Autoplay blocked:', src, e.message));
+          video.defaultMuted = true;
+          video.play().catch(() => {});
         });
         hls.on(Hls.Events.ERROR, (_, data) => {
           if (data && data.fatal) {
@@ -1698,6 +1717,20 @@
 
       applyGridLayout(slotsPerScreen);
       updateActiveStreams();
+
+      // Retry autoplay after user interaction if browser blocked it
+      if (!initializeVideos._interactionBound) {
+        initializeVideos._interactionBound = true;
+        const retryAutoplay = () => {
+          updateActiveStreams();
+          document.removeEventListener('click', retryAutoplay);
+          document.removeEventListener('keydown', retryAutoplay);
+          document.removeEventListener('touchstart', retryAutoplay);
+        };
+        document.addEventListener('click', retryAutoplay, { once: false });
+        document.addEventListener('keydown', retryAutoplay, { once: false });
+        document.addEventListener('touchstart', retryAutoplay, { once: false });
+      }
     }
 
     function getFullscreenElement() {
@@ -1739,7 +1772,7 @@
         const targetPage = navigated ? fsStreamIdx : wrapperIdx;
         if (targetPage >= 0) {
           snapCurrentPage = Math.floor(targetPage / slotsPerScreen);
-          window.scrollTo(0, snapCurrentPage * window.innerHeight);
+          window.scrollTo(0, getPageOffsetTop(snapCurrentPage));
         }
 
         fsStreamIdx = -1;
@@ -1769,6 +1802,12 @@
         .forEach(p => p.classList.remove('visible'));
     }
 
+    function getPageOffsetTop(pageIndex) {
+      const pages = document.querySelectorAll('.stream-page');
+      if (pageIndex >= 0 && pageIndex < pages.length) return pages[pageIndex].offsetTop;
+      return pageIndex * window.innerHeight;
+    }
+
     function snapTo(pageIndex) {
       const total = getSnapPageCount();
       if (total === 0) return;
@@ -1780,7 +1819,7 @@
       snapAnimating = true;
 
       const startY = window.scrollY;
-      const endY = target * window.innerHeight;
+      const endY = getPageOffsetTop(target);
       const distance = endY - startY;
       if (distance === 0) { snapAnimating = false; updateActiveStreams(); return; }
 
@@ -1851,7 +1890,7 @@
       fsStreamIdx = nextIdx;
       const slotsPerScreen = getCurrentSlotsCount();
       snapCurrentPage = Math.floor(nextIdx / slotsPerScreen);
-      window.scrollTo(0, snapCurrentPage * window.innerHeight);
+      window.scrollTo(0, getPageOffsetTop(snapCurrentPage));
 
       return true;
     }
@@ -1891,6 +1930,10 @@
         if (!navigateInFullscreen(-1)) snapTo(snapCurrentPage - 1);
       }
     }, { capture: true });
+
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') updateActiveStreams();
+    });
 
     // Инициализация
     initializeTopIconPanel();
