@@ -17,7 +17,13 @@
       "WebFetch(domain:seeklogo.com)",
       "WebFetch(domain:cdn.streamelements.com)",
       "Bash(mv:*)",
-      "Bash(\"C:\\\\0_PROJECTS\\\\projects-factory\\\\MY_REPOS\\\\HTML-LiveStream-TV-Wall\\\\DATA\\\\BUTTOM_ICONS\\\\tip-jar.svg\":*)"
+      "Bash(\"C:\\\\0_PROJECTS\\\\projects-factory\\\\MY_REPOS\\\\HTML-LiveStream-TV-Wall\\\\DATA\\\\BUTTOM_ICONS\\\\tip-jar.svg\":*)",
+      "mcp__plugin_context7_context7__query-docs",
+      "Bash(python:*)",
+      "mcp__plugin_playwright_playwright__browser_navigate",
+      "mcp__plugin_playwright_playwright__browser_console_messages",
+      "mcp__plugin_playwright_playwright__browser_evaluate",
+      "Bash(\"C:/0_PROJECTS/projects-factory/MY_REPOS/TV-Wall/DATA/LISTS/NEWS3.json\":*)"
     ]
   }
 }

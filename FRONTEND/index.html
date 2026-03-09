@@ -58,6 +58,35 @@
       pointer-events: none;
     }
     
+    .drag-handle {
+      display: none;
+      position: absolute;
+      top: 6px;
+      left: 6px;
+      width: 28px;
+      height: 28px;
+      align-items: center;
+      justify-content: center;
+      font-size: 18px;
+      color: #fff;
+      background: rgba(0,0,0,0.5);
+      border-radius: 4px;
+      cursor: grab;
+      z-index: 10;
+      user-select: none;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+    }
+    .drag-handle:active { cursor: grabbing; }
+    body.dev-mode .drag-handle { display: flex; }
+    body.dev-mode .video-wrapper:hover .drag-handle {
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .video-wrapper.dragging { opacity: 0.4; outline: 2px dashed #888; }
+    .video-wrapper.drag-over { outline: 2px solid #4caf50; }
+
     .hls-video {
       object-fit: cover;
       border: none;
@@ -67,28 +96,6 @@
       display: block;
     }
     
-    .overlay-container {
-      position: absolute;
-      background-color: rgba(255, 0, 0, 0.4);
-      top: 50%; 
-      left: 50%;
-      width: 200px; 
-      height: 200px;
-      transform: translate(-50%, -50%);
-      padding: 20px;
-      display: none;
-      z-index: 9999;
-      border-radius: 10px;
-    }
-    
-    .overlay-image {
-      width: 100%; 
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      pointer-events: none;
-      border-radius: 5px;
-    }
 
     .video-wrapper:fullscreen .hls-video,
     .video-wrapper:-webkit-full-screen .hls-video,
@@ -152,7 +159,7 @@
       position: fixed;
       top: 0;
       right: 0;
-      width: 10px;
+      width: 20px;
       height: 100vh;
       z-index: 10010;
       background: transparent;
@@ -162,7 +169,7 @@
       position: fixed;
       top: 0;
       left: 0;
-      width: 10px;
+      width: 20px;
       height: 100vh;
       z-index: 10010;
       background: transparent;
@@ -173,7 +180,7 @@
       top: 0;
       left: 0;
       width: 100vw;
-      height: 10px;
+      height: 20px;
       z-index: 10010;
       background: transparent;
     }
@@ -363,7 +370,7 @@
       bottom: 0;
       left: 0;
       width: 100vw;
-      height: 10px;
+      height: 20px;
       z-index: 10010;
       background: transparent;
     }
@@ -511,6 +518,25 @@
       </svg>
       <span class="side-icon-label" aria-hidden="true">NEWS</span>
     </button>
+    <button class="side-icon-btn dev-only" id="side-icon-news2" type="button" aria-label="News2 streams" style="display:none">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="14" rx="2"></rect>
+        <path d="M8 9h8"></path>
+        <path d="M8 12h8"></path>
+        <path d="M15 15h2" stroke-width="2.5"></path>
+      </svg>
+      <span class="side-icon-label" aria-hidden="true">NEWS2</span>
+    </button>
+    <button class="side-icon-btn dev-only" id="side-icon-news3" type="button" aria-label="News3 streams" style="display:none">
+      <svg viewBox="0 0 24 24" aria-hidden="true">
+        <rect x="4" y="5" width="16" height="14" rx="2"></rect>
+        <path d="M8 9h8"></path>
+        <path d="M8 12h8"></path>
+        <path d="M14 15h3" stroke-width="2.5"></path>
+        <path d="M15.5 14v2" stroke-width="1.5"></path>
+      </svg>
+      <span class="side-icon-label" aria-hidden="true">NEWS3</span>
+    </button>
     <button class="side-icon-btn" id="side-icon-sport" type="button" aria-label="Sport streams">
       <svg viewBox="0 0 24 24" aria-hidden="true">
         <ellipse cx="10" cy="9" rx="5" ry="6"></ellipse>
@@ -617,6 +643,8 @@
 
   <div class="stream-context-menu" id="stream-context-menu">
     <button class="context-menu-btn" data-action="send-news">Send to NEWS</button>
+    <button class="context-menu-btn" data-action="send-news2">Send to NEWS2</button>
+    <button class="context-menu-btn" data-action="send-news3">Send to NEWS3</button>
     <button class="context-menu-btn" data-action="send-sport">Send to SPORT</button>
     <button class="context-menu-btn" data-action="send-music">Send to MUSIC</button>
     <button class="context-menu-btn" data-action="send-all">Send to ALL</button>
@@ -633,11 +661,6 @@
       <video class="hls-video" 
              data-src="https://live-hls-web-aje.getaj.net/AJE/index.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 0">
-        </div>
-      </a>
     </div>
 
     <!-- Video 2: Al Jazeera Arabic -->
@@ -645,11 +668,6 @@
       <video class="hls-video" 
              data-src="https://live-hls-v3-aja.getaj.net/AJA-V3/index.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 1">
-        </div>
-      </a>
     </div>
 
     <!-- Video 3: Zagros TV -->
@@ -657,11 +675,6 @@
       <video class="hls-video" 
              data-src="https://5a3ed7a72ed4b.streamlock.net/zagrostv/SMIL:myStream.smil/playlist.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 2">
-        </div>
-      </a>
     </div>
 
     <!-- Video 4: Bloomberg TV -->
@@ -669,11 +682,6 @@
       <video class="hls-video" 
              data-src="https://dai.google.com/linear/hls/event/Sid4xiTQTkCT1SLu6rjUSQ/master.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 3">
-        </div>
-      </a>
     </div>
 
     <!-- Video 5: Balkan Web -->
@@ -681,11 +689,6 @@
       <video class="hls-video" 
              data-src="https://tv.balkanweb.com/news24/livestream/playlist.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 4">
-        </div>
-      </a>
     </div>
 
     <!-- Video 6: Syri TV -->
@@ -693,11 +696,6 @@
       <video class="hls-video" 
              data-src="https://stream.syritv.al/SyriTV/index.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 5">
-        </div>
-      </a>
     </div>
 
     <!-- Video 7: CBC TV -->
@@ -705,11 +703,6 @@
       <video class="hls-video" 
              data-src="https://stream.cbctv.az:5443/LiveApp/streams/cbctv.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 6">
-        </div>
-      </a>
     </div>
 
     <!-- Video 8: CBC News -->
@@ -717,11 +710,6 @@
       <video class="hls-video" 
              data-src="https://d7z3qjdsxbwoq.cloudfront.net/groupa/live/f9809cea-1e07-47cd-a94d-2ddd3e1351db/live.isml/.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 7">
-        </div>
-      </a>
     </div>
 
     <!-- Video 9: RDI -->
@@ -729,11 +717,6 @@
       <video class="hls-video" 
              data-src="https://rcavlive.akamaized.net/hls/live/704025/xcanrdi/master.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 8">
-        </div>
-      </a>
     </div>
 
     <!-- Video 10: Kan 11 -->
@@ -741,11 +724,6 @@
       <video class="hls-video" 
              data-src="https://kan11.media.kan.org.il/hls/live/2024514/2024514/master.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 9">
-        </div>
-      </a>
     </div>
 
     <!-- Video 11: i24 News -->
@@ -753,11 +731,6 @@
       <video class="hls-video" 
              data-src="https://d2xg1g9o5vns8m.cloudfront.net/out/v1/0855d703f7d5436fae6a9c7ce8ca5075/index.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 10">
-        </div>
-      </a>
     </div>
 
     <!-- Video 12: Dijlah -->
@@ -765,11 +738,6 @@
       <video class="hls-video" 
              data-src="https://ghaasiflu.online/Dijlah/tracks-v1a1/playlist.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 11">
-        </div>
-      </a>
     </div>
 
     <!-- Video 13: Alsharqiya -->
@@ -777,11 +745,6 @@
       <video class="hls-video" 
              data-src="https://5d94523502c2d.streamlock.net/alsharqiyalive/mystream/playlist.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 12">
-        </div>
-      </a>
     </div>
 
     <!-- Video 14: Russia 24 -->
@@ -789,11 +752,6 @@
       <video class="hls-video" 
              data-src="https://ruvlive.akamaized.net/out/v1/2ff7673de40f419fa5164498fae89089/index.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 13">
-        </div>
-      </a>
     </div>
 
     <!-- Video 15: A2D TV -->
@@ -801,11 +759,6 @@
       <video class="hls-video" 
              data-src="https://live.streaming.a2d.tv/asset/20025962.isml/.m3u8"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 14">
-        </div>
-      </a>
     </div>
 
     <!-- Video 16: Onni TV -->
@@ -813,11 +766,6 @@
       <video class="hls-video" 
              data-src="https://onnitv.digitacdn.net/live/ott/onnitv/playlist.m3u8?organizationId=83459409&suiteItemId=83459780"
              controls autoplay muted playsinline></video>
-      <a href="#" target="_blank" rel="noopener noreferrer">
-        <div class="overlay-container">
-          <img class="overlay-image" src="" alt="Overlay 15">
-        </div>
-      </a>
     </div>
 
   </div>
@@ -948,7 +896,7 @@
 
     function clearMainCategoryButtons() {
       [
-        'side-icon-news', 'side-icon-sport', 'side-icon-music', 'side-icon-all'
+        'side-icon-news', 'side-icon-news2', 'side-icon-news3', 'side-icon-sport', 'side-icon-music', 'side-icon-all'
       ].forEach((id) => {
         const btn = document.getElementById(id);
         if (btn) btn.classList.remove('active');
@@ -961,7 +909,9 @@
         news: ['side-icon-news'],
         sport: ['side-icon-sport'],
         music: ['side-icon-music'],
-        all: ['side-icon-all']
+        all: ['side-icon-all'],
+        news2: ['side-icon-news2'],
+        news3: ['side-icon-news3']
       };
       (idsByCategory[category] || []).forEach((id) => {
         const btn = document.getElementById(id);
@@ -977,7 +927,16 @@
       const sportButton = document.getElementById('side-icon-sport');
       const musicButton = document.getElementById('side-icon-music');
       const allButton = document.getElementById('side-icon-all');
+      const news2Button = document.getElementById('side-icon-news2');
+      const news3Button = document.getElementById('side-icon-news3');
       if (!panel || !edgeTrigger) return;
+
+      if (DEV_MODE && news2Button) {
+        news2Button.style.display = '';
+      }
+      if (DEV_MODE && news3Button) {
+        news3Button.style.display = '';
+      }
 
       const showPanel = () => panel.classList.add('visible');
       const hidePanel = () => panel.classList.remove('visible');
@@ -1021,6 +980,113 @@
           initializeVideos(ALL_STREAMS_SOURCE_URL);
         });
       }
+
+      if (news2Button) {
+        news2Button.addEventListener('click', (e) => {
+          e.preventDefault();
+          setActiveMainCategory('news2');
+          initializeVideos(NEWS2_STREAMS_SOURCE_URL);
+        });
+      }
+
+      if (news3Button) {
+        news3Button.addEventListener('click', (e) => {
+          e.preventDefault();
+          setActiveMainCategory('news3');
+          initializeVideos(NEWS3_STREAMS_SOURCE_URL);
+        });
+      }
+    }
+
+    function persistStreamOrder() {
+      const urls = streamStates.map(s => s.src);
+      fetch('/api/reorder-list', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ source: currentStreamsSourceUrl, urls }),
+      }).then(r => r.json()).then(data => {
+        if (!data.ok) console.error('Reorder failed:', data.error);
+      });
+    }
+
+    function initializeDragAndDrop() {
+      let dragState = null;
+
+      document.addEventListener('dragstart', e => {
+        const handle = e.target.closest('.drag-handle');
+        if (!handle) return;
+        const wrapper = handle.closest('.video-wrapper');
+        if (!wrapper) return;
+        const idx = streamStates.findIndex(s => s.wrapper === wrapper);
+        if (idx === -1) return;
+        dragState = { wrapper, idx };
+        wrapper.classList.add('dragging');
+        e.dataTransfer.effectAllowed = 'move';
+        e.dataTransfer.setData('text/plain', String(idx));
+      });
+
+      document.addEventListener('dragover', e => {
+        if (!dragState) return;
+        const wrapper = e.target.closest('.video-wrapper');
+        if (!wrapper || wrapper === dragState.wrapper) return;
+        e.preventDefault();
+        e.dataTransfer.dropEffect = 'move';
+        wrapper.classList.add('drag-over');
+      });
+
+      document.addEventListener('dragleave', e => {
+        const wrapper = e.target.closest('.video-wrapper');
+        if (wrapper) wrapper.classList.remove('drag-over');
+      });
+
+      document.addEventListener('drop', e => {
+        if (!dragState) return;
+        e.preventDefault();
+        const targetWrapper = e.target.closest('.video-wrapper');
+        if (!targetWrapper || targetWrapper === dragState.wrapper) return;
+        targetWrapper.classList.remove('drag-over');
+
+        const targetIdx = streamStates.findIndex(s => s.wrapper === targetWrapper);
+        if (targetIdx === -1) return;
+
+        const srcState = streamStates[dragState.idx];
+        const dstState = streamStates[targetIdx];
+
+        // Stop both streams
+        const srcWasActive = srcState.active;
+        const dstWasActive = dstState.active;
+        stopVideoStream(srcState);
+        stopVideoStream(dstState);
+
+        // Swap src in states (wrappers/videos stay in place)
+        const tmpSrc = srcState.src;
+        srcState.src = dstState.src;
+        dstState.src = tmpSrc;
+
+        // Update video data-src attributes
+        srcState.video.setAttribute('data-src', srcState.src);
+        dstState.video.setAttribute('data-src', dstState.src);
+
+        // Restart streams that were active
+        srcState.broken = false;
+        dstState.broken = false;
+        srcState.wrapper.classList.remove('broken');
+        dstState.wrapper.classList.remove('broken');
+        if (srcWasActive) startVideoStream(srcState);
+        if (dstWasActive) startVideoStream(dstState);
+
+        persistStreamOrder();
+        dragState = null;
+      });
+
+      document.addEventListener('dragend', () => {
+        if (dragState) {
+          dragState.wrapper.classList.remove('dragging');
+          dragState = null;
+        }
+        document.querySelectorAll('.drag-over').forEach(el => el.classList.remove('drag-over'));
+        document.querySelectorAll('.dragging').forEach(el => el.classList.remove('dragging'));
+      });
     }
 
     function initializeContextMenu() {
@@ -1072,6 +1138,8 @@
       const actionToTarget = {
         'send-music': 'music',
         'send-news': 'news',
+        'send-news2': 'news2',
+        'send-news3': 'news3',
         'send-sport': 'sport',
         'send-all': 'all',
         'send-blacklist': 'blacklist',
@@ -1372,18 +1440,16 @@
       });
     }
 
-    // Video and overlay management
-    let overlayContainers = [];
+    // Video management
     let streamStates = [];
-    let overlayData = [];
     let lastWrapperFs = null;
-    let overlayTimeout = null;
     const FRONTEND_STREAMS_COUNT = Number("__FRONTEND_STREAMS_COUNT__");
     const NEWS_STREAMS_SOURCE_URL = "/DATA/LISTS/NEWS.json";
     const SPORT_STREAMS_SOURCE_URL = "/DATA/LISTS/SPORT.json";
     const MUSIC_STREAMS_SOURCE_URL = "/DATA/LISTS/MUSIC.json";
     const ALL_STREAMS_SOURCE_URL = "/DATA/LISTS/ALL.json";
-    const PROMO_DISPLAY_SECONDS = Number("__FRONTEND_PROMO_DISPLAY_SECONDS__");
+    const NEWS2_STREAMS_SOURCE_URL = "/DATA/LISTS/NEWS2.json";
+    const NEWS3_STREAMS_SOURCE_URL = "/DATA/LISTS/NEWS3.json";
     const DEV_MODE = "__FRONTEND_DEV_MODE__" === "true";
     const SLOTS_PER_SCREEN_OPTIONS = [1, 4, 9, 16];
     let currentSlotsIndex = 1;
@@ -1401,14 +1467,6 @@
       rightButton.disabled = currentSlotsIndex >= SLOTS_PER_SCREEN_OPTIONS.length - 1;
     }
 
-    function enterSiteFullscreen() {
-      const el = document.documentElement;
-      if (el.requestFullscreen) el.requestFullscreen();
-      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
-      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
-      else if (el.msRequestFullscreen) el.msRequestFullscreen();
-    }
-
     let redistributeTimer = null;
 
     function hideBrokenStream(state, reason) {
@@ -1421,7 +1479,6 @@
         wrapper.parentNode.removeChild(wrapper);
       }
       streamStates = streamStates.filter(s => s !== state);
-      overlayContainers = overlayContainers.filter(o => o.wrapper !== wrapper);
 
       clearTimeout(redistributeTimer);
       redistributeTimer = setTimeout(redistributePages, 300);
@@ -1452,7 +1509,10 @@
         state.hls = hls;
         hls.loadSource(src);
         hls.attachMedia(video);
-        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          video.muted = true;
+          video.play().catch(e => console.warn('Autoplay blocked:', src, e.message));
+        });
         hls.on(Hls.Events.ERROR, (_, data) => {
           if (data && data.fatal) {
             hideBrokenStream(state, data.details || 'fatal hls error');
@@ -1489,15 +1549,6 @@
       state.active = false;
     }
 
-    function loadOverlayData() {
-      return fetch('../DATA/ACTIVE_PROMOS_LIST.json')
-        .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then(items => Array.isArray(items) ? items : [])
-        .then(items => items.filter(item => item && item.fileName && item.promoUrl))
-        .then(data => overlayData = data)
-        .catch(err => console.error('Failed to load overlay data:', err));
-    }
-
     function loadStreamsList(sourceUrl) {
       return fetch(sourceUrl)
         .then(r => { if (!r.ok) throw new Error(r.status); return r.json(); })
@@ -1518,31 +1569,22 @@
       video.className = 'hls-video';
       video.setAttribute('data-src', src);
       video.setAttribute('controls', '');
+      video.setAttribute('autoplay', '');
       video.setAttribute('muted', '');
       video.setAttribute('playsinline', '');
-      video.setAttribute('preload', 'none');
       video.defaultMuted = true;
       video.muted = true;
 
-      const link = document.createElement('a');
-      link.href = '#';
-      link.target = '_blank';
-      link.rel = 'noopener noreferrer';
-
-      const containerDiv = document.createElement('div');
-      containerDiv.className = 'overlay-container';
-
-      const img = document.createElement('img');
-      img.className = 'overlay-image';
-      img.src = '';
-      img.alt = `Overlay ${idx}`;
-
-      containerDiv.appendChild(img);
-      link.appendChild(containerDiv);
       wrapper.appendChild(video);
-      wrapper.appendChild(link);
 
-      return { wrapper, video, link, containerDiv, img, src };
+      const handle = document.createElement('div');
+      handle.className = 'drag-handle';
+      handle.textContent = '\u2630';
+      handle.setAttribute('draggable', 'true');
+      handle.addEventListener('click', e => e.stopPropagation());
+      wrapper.appendChild(handle);
+
+      return { wrapper, video, src };
     }
 
     function redistributePages() {
@@ -1581,7 +1623,7 @@
     function updateActiveStreams() {
       const pages = document.querySelectorAll('.stream-page');
       const slotsPerScreen = getCurrentSlotsCount();
-      const prefetchRange = slotsPerScreen <= 4 ? 1 : 0;
+      const prefetchRange = slotsPerScreen <= 1 ? 1 : 0;
 
       pages.forEach((page, pageIndex) => {
         const shouldBeActive = Math.abs(pageIndex - snapCurrentPage) <= prefetchRange;
@@ -1607,7 +1649,6 @@
 
       const streamUrls = await loadStreamsList(currentStreamsSourceUrl);
       streamStates = [];
-      overlayContainers = [];
       while (container.firstChild) container.removeChild(container.firstChild);
 
       window.scrollTo({ top: 0, behavior: 'instant' });
@@ -1623,7 +1664,7 @@
         }
 
         const item = createVideoWrapper(src, idx);
-        const { wrapper, video, link, containerDiv, img } = item;
+        const { wrapper, video } = item;
         currentPage.appendChild(wrapper);
 
         const state = {
@@ -1637,35 +1678,20 @@
         };
         streamStates.push(state);
 
-        overlayContainers.push({ wrapper, link, containerDiv, img, video });
-
-        img.addEventListener('error', () => console.error('Overlay load failed:', img.src));
-
         wrapper.addEventListener('click', e => {
-          if (e.target.closest('a')) return;
           e.preventDefault();
           e.stopPropagation();
 
-          const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
-                       document.mozFullScreenElement || document.msFullscreenElement;
-          const isFs = (fsEl === wrapper);
+          const isFs = (getFullscreenElement() === wrapper);
 
           if (!isFs) {
             startVideoStream(state);
-            overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
             lastWrapperFs = wrapper;
-
-            if (wrapper.requestFullscreen) wrapper.requestFullscreen();
-            else if (wrapper.webkitRequestFullscreen) wrapper.webkitRequestFullscreen();
-            else if (wrapper.mozRequestFullScreen) wrapper.mozRequestFullScreen();
-            else if (wrapper.msRequestFullscreen) wrapper.msRequestFullscreen();
-
+            fsStreamIdx = streamStates.indexOf(state);
+            enterFullscreen(wrapper);
             video.muted = false;
           } else {
-            if (document.exitFullscreen) document.exitFullscreen();
-            else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
-            else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
-            else if (document.msExitFullscreen) document.msExitFullscreen();
+            exitFullscreen();
           }
         });
       });
@@ -1674,44 +1700,51 @@
       updateActiveStreams();
     }
 
+    function getFullscreenElement() {
+      return document.fullscreenElement || document.webkitFullscreenElement ||
+             document.mozFullScreenElement || document.msFullscreenElement;
+    }
+
+    function exitFullscreen() {
+      if (document.exitFullscreen) document.exitFullscreen();
+      else if (document.webkitExitFullscreen) document.webkitExitFullscreen();
+      else if (document.mozCancelFullScreen) document.mozCancelFullScreen();
+      else if (document.msExitFullscreen) document.msExitFullscreen();
+    }
+
+    function enterFullscreen(el) {
+      if (el.requestFullscreen) el.requestFullscreen();
+      else if (el.webkitRequestFullscreen) el.webkitRequestFullscreen();
+      else if (el.mozRequestFullScreen) el.mozRequestFullScreen();
+      else if (el.msRequestFullscreen) el.msRequestFullscreen();
+    }
+
     function onVideoExitFullscreen() {
-      const fsEl = document.fullscreenElement || document.webkitFullscreenElement ||
-                   document.mozFullScreenElement || document.msFullscreenElement;
-      
+      const fsEl = getFullscreenElement();
+
       if (lastWrapperFs && fsEl !== lastWrapperFs) {
-        const exitedVideo = overlayContainers.find(o => 
-          o.containerDiv.closest('div.video-wrapper') === lastWrapperFs
-        )?.video;
-        
-        if (exitedVideo) exitedVideo.muted = true;
-        
-        enterSiteFullscreen();
-        
-        if (overlayTimeout) clearTimeout(overlayTimeout);
-        
-        if (!overlayData.length) {
-          console.error('Overlay data empty');
-        } else {
-          overlayContainers.forEach((o, i) => {
-            const data = overlayData[i % overlayData.length];
-            o.img.src = `../DATA/PROMOS/${data.fileName}`;
-            o.link.href = data.promoUrl;
-            
-            if (o.containerDiv !== lastWrapperFs.querySelector('.overlay-container')) {
-              o.containerDiv.style.display = 'block';
-            }
-          });
-          
-          if (Number.isFinite(PROMO_DISPLAY_SECONDS) && PROMO_DISPLAY_SECONDS >= 0) {
-            overlayTimeout = setTimeout(() => {
-              overlayContainers.forEach(o => o.containerDiv.style.display = 'none');
-            }, PROMO_DISPLAY_SECONDS * 1000);
-          } else {
-            console.error('Invalid FRONTEND_PROMO_DISPLAY_SECONDS from SETTINGS.py');
+        const fsState = streamStates.find(s => s.wrapper === lastWrapperFs);
+        const wrapperIdx = streamStates.indexOf(fsState);
+        const navigated = fsStreamIdx >= 0 && fsStreamIdx !== wrapperIdx;
+
+        if (fsState) {
+          fsState.video.muted = true;
+          if (navigated) {
+            stopVideoStream(fsState);
+            startVideoStream(fsState);
           }
         }
-        
+
+        const slotsPerScreen = getCurrentSlotsCount();
+        const targetPage = navigated ? fsStreamIdx : wrapperIdx;
+        if (targetPage >= 0) {
+          snapCurrentPage = Math.floor(targetPage / slotsPerScreen);
+          window.scrollTo(0, snapCurrentPage * window.innerHeight);
+        }
+
+        fsStreamIdx = -1;
         lastWrapperFs = null;
+        updateActiveStreams();
       }
     }
 
@@ -1766,13 +1799,72 @@
       snapRafId = requestAnimationFrame(step);
     }
 
+    let fsStreamIdx = -1;
+
+    function loadSourceOnVideo(video, src, state) {
+      if (state.hls) { state.hls.destroy(); state.hls = null; }
+      video.pause();
+      video.removeAttribute('src');
+
+      if (window.Hls && Hls.isSupported()) {
+        const hls = new Hls({
+          enableWorker: true, lowLatencyMode: false,
+          backBufferLength: 15, maxBufferLength: 10, maxMaxBufferLength: 30,
+          maxBufferSize: 30 * 1000 * 1000,
+          manifestLoadingMaxRetry: 3, levelLoadingMaxRetry: 3, fragLoadingMaxRetry: 3,
+          manifestLoadingTimeOut: 8000, levelLoadingTimeOut: 8000, fragLoadingTimeOut: 8000,
+        });
+        state.hls = hls;
+        hls.loadSource(src);
+        hls.attachMedia(video);
+        hls.on(Hls.Events.MANIFEST_PARSED, () => video.play().catch(() => {}));
+      } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        video.src = src;
+        video.load();
+        video.play().catch(() => {});
+      }
+    }
+
+    function navigateInFullscreen(direction) {
+      if (!getFullscreenElement() || !lastWrapperFs) return false;
+
+      if (fsStreamIdx < 0) {
+        fsStreamIdx = streamStates.findIndex(s => s.wrapper === lastWrapperFs);
+      }
+      if (fsStreamIdx < 0) return false;
+
+      const nextIdx = fsStreamIdx + direction;
+      if (nextIdx < 0 || nextIdx >= streamStates.length) return false;
+
+      const fsState = streamStates.find(s => s.wrapper === lastWrapperFs);
+      if (!fsState) return false;
+
+      const nextSrc = streamStates[nextIdx].src;
+      if (!nextSrc) return false;
+
+      fsState.video.removeAttribute('controls');
+      loadSourceOnVideo(fsState.video, nextSrc, fsState);
+      fsState.video.muted = false;
+      fsState.active = true;
+      setTimeout(() => fsState.video.setAttribute('controls', ''), 500);
+
+      fsStreamIdx = nextIdx;
+      const slotsPerScreen = getCurrentSlotsCount();
+      snapCurrentPage = Math.floor(nextIdx / slotsPerScreen);
+      window.scrollTo(0, snapCurrentPage * window.innerHeight);
+
+      return true;
+    }
+
     document.addEventListener('wheel', e => {
       if (e.target.closest('.bottom-icon-panel, .side-icon-panel')) return;
       e.preventDefault();
       if (snapAnimating) return;
-      if (e.deltaY > 0) snapTo(snapCurrentPage + 1);
-      else if (e.deltaY < 0) snapTo(snapCurrentPage - 1);
-    }, { passive: false });
+      const direction = e.deltaY > 0 ? 1 : e.deltaY < 0 ? -1 : 0;
+      if (direction && !navigateInFullscreen(direction)) {
+        snapTo(snapCurrentPage + direction);
+      }
+    }, { passive: false, capture: true });
 
     document.addEventListener('touchstart', e => {
       snapTouchStartY = e.touches[0].clientY;
@@ -1782,30 +1874,34 @@
       if (snapAnimating) return;
       const diff = snapTouchStartY - e.changedTouches[0].clientY;
       if (Math.abs(diff) > 50) {
-        if (diff > 0) snapTo(snapCurrentPage + 1);
-        else snapTo(snapCurrentPage - 1);
+        const direction = diff > 0 ? 1 : -1;
+        if (!navigateInFullscreen(direction)) {
+          snapTo(snapCurrentPage + direction);
+        }
       }
     }, { passive: true });
 
     document.addEventListener('keydown', e => {
       if (snapAnimating) return;
       if (e.key === 'ArrowDown' || e.key === 'PageDown') {
-        e.preventDefault(); snapTo(snapCurrentPage + 1);
+        e.preventDefault();
+        if (!navigateInFullscreen(1)) snapTo(snapCurrentPage + 1);
       } else if (e.key === 'ArrowUp' || e.key === 'PageUp') {
-        e.preventDefault(); snapTo(snapCurrentPage - 1);
+        e.preventDefault();
+        if (!navigateInFullscreen(-1)) snapTo(snapCurrentPage - 1);
       }
-    });
+    }, { capture: true });
 
     // Инициализация
     initializeTopIconPanel();
     initializeSideIconPanel();
     initializeBottomIconPanel();
+    if (DEV_MODE) document.body.classList.add('dev-mode');
     if (DEV_MODE) initializeContextMenu();
+    if (DEV_MODE) initializeDragAndDrop();
     initializeLeftIconPanel();
     initializeCountryFlagsPanel();
-    loadOverlayData().then(() => {
-      initializeVideos(NEWS_STREAMS_SOURCE_URL);
-    }).catch(err => console.error('Init error:', err));
+    initializeVideos(NEWS_STREAMS_SOURCE_URL);
   </script>
 </body>
 </html>

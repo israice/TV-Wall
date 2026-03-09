@@ -97,8 +97,14 @@ validate_settings_or_raise()
 
 app = FastAPI(title=settings.APP_TITLE)
 
-# Static assets: JSON and promo GIF files.
-app.mount("/DATA", StaticFiles(directory=DATA_DIR), name="data")
+# Static assets.
+class NoCacheStaticFiles(StaticFiles):
+    def file_response(self, *args, **kwargs) -> Response:
+        resp = super().file_response(*args, **kwargs)
+        resp.headers["Cache-Control"] = "no-store"
+        return resp
+
+app.mount("/DATA", NoCacheStaticFiles(directory=DATA_DIR), name="data")
 
 
 @app.get("/", include_in_schema=False)
@@ -128,6 +134,8 @@ def serve_index() -> HTMLResponse:
 ALLOWED_LISTS = {
     "music": DATA_DIR / "LISTS" / "MUSIC.json",
     "news": DATA_DIR / "LISTS" / "NEWS.json",
+    "news2": DATA_DIR / "LISTS" / "NEWS2.json",
+    "news3": DATA_DIR / "LISTS" / "NEWS3.json",
     "sport": DATA_DIR / "LISTS" / "SPORT.json",
     "all": DATA_DIR / "LISTS" / "ALL.json",
     "blacklist": DATA_DIR / "LISTS" / "BLACKLIST.json",
@@ -141,6 +149,11 @@ class SendToListRequest(BaseModel):
     url: str
     target: str
     source: str = ""
+
+
+class ReorderListRequest(BaseModel):
+    source: str
+    urls: list[str]
 
 
 def _resolve_source_key(source_url: str) -> str | None:
@@ -189,6 +202,21 @@ def send_to_list(body: SendToListRequest) -> JSONResponse:
     target_path.write_text(json.dumps(items, indent=2, ensure_ascii=False), encoding="utf-8")
 
     return JSONResponse({"ok": True, "target": body.target, "source": source_key or ""})
+
+
+@app.post("/api/reorder-list", include_in_schema=False)
+def reorder_list(body: ReorderListRequest) -> JSONResponse:
+    if not settings.DEV_MODE:
+        return JSONResponse({"error": "dev mode only"}, status_code=403)
+    source_key = _resolve_source_key(body.source)
+    if not source_key:
+        return JSONResponse({"error": "unknown source"}, status_code=400)
+    path = ALLOWED_LISTS[source_key]
+    for url in body.urls:
+        if not isinstance(url, str) or not url.startswith("http"):
+            return JSONResponse({"error": "invalid url"}, status_code=400)
+    path.write_text(json.dumps(body.urls, indent=2, ensure_ascii=False), encoding="utf-8")
+    return JSONResponse({"ok": True, "source": source_key, "count": len(body.urls)})
 
 
 @app.get("/.well-known/appspecific/com.chrome.devtools.json", include_in_schema=False)
